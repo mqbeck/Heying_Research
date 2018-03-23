@@ -41,6 +41,17 @@ assert(test_grid[2][1].neighbor_list ==
 assert(test_grid[2][2].neighbor_list == 
 					[[0,2],[1,2],[2,1],[2,0],[1,1],[1,0],[0,1],[0,0]])
 
+nparticles = 20
+volume_length = (nparticles / 0.5) 
+diameter = 1
+rx = [None] * nparticles
+ry = [None] * nparticles
+rxy = [[[None],[None]] for xy in range(0, nparticles)]
+define_list(nparticles, volume_length, diameter, rx, ry, rxy)
+for i in rxy:
+    print(i)
 
 # test cases for the assign_particles_to_grid(rxy, grid) function
 assert(assign_particles_to_grid)
+
+
