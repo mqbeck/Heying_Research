@@ -37,6 +37,7 @@ class Grid_tile:
         # x and y represent the row and column
         self.x = i #grid tile's x position at top left corner
         self.y = j #grid tile's y position at top left corner
+        #maybe better to define this as the center
 
         particle_list = [] 
         # create an empty list which will later be changed as the grid
@@ -52,7 +53,7 @@ def main():
     grid = [[None for column in range(0, Values.n_root)] 
             for row in range(0, Values.n_root)] 
     #pre allocate the memory for the particles
-    rxy = [[[None],[None]] for xy in range(0, Values.nroot)]
+    rxy = [[None,None] for xy in range(0, Values.nroot)]
 
     #construct a grid that is ceiling(sqrt(n)) x ceiling(sqrt(n)) (int x int)
     build_grid(grid, Values.grid_tile_height) 
@@ -235,13 +236,16 @@ def define_list(nparticles, volume_length, diameter,rx, ry, rxy):
             ry[j] = ypos
             ypos += diameter
         
-            rxy[j] = [[rx[j]],[ry[j]]]
+            rxy[j] = [rx[j],ry[j]]
     #enddo    
 
     
 def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension) 
-    pass # a keyword that tells the translator (~compiler) to ignore eveyrthing after pass
-
+    
+    for i in range(0, len(rxy)):
+        x = floor(rxy[i][0] + Values.diameter)
+        y = floor(rxy[i][1] + Values.diameter)
+        grid[x][y].particle_list.append(rxy[i])
     #psuedo code:
  #   for particle in rxy:
  #       if particle[x] is within grid[x] +  2*Values.diameter and particle[y] is within grid[y] + 2*diamater
