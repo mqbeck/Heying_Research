@@ -246,15 +246,6 @@ def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension)
         x = floor(rxy[i][0] // Values.grid_tile_height)
         y = floor(rxy[i][1] // Values.grid_tile_height)
         grid[x][y].particle_list.append(rxy[i])
-    #psuedo code:
- #   for particle in rxy:
- #       if particle[x] is within grid[x] +  2*Values.diameter and particle[y] is within grid[y] + 2*diamater
- #       then grid.particle_list.append(particle)
- #       
-#
-#    # maybe use some sort of division:
-#        x = (n_root * 2) / particle[x]
-#        grid[x]/particle_list.append(particle)
 
 def sort_list(rx): # O(nlogn)
     # sort the list, rx, for simpler implementation 
