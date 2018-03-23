@@ -8,10 +8,11 @@ class Values:
     ncycles = 2000 # number of times a particle will be selceted and moved
     nparticles = 17 # number of particles
     rho = 0.5 # particle density - how close the particles will be at simulation start
-    volume_length = (nparticles / rho) ** 0.5 # length of the box - in this case the grid length
+    volume_length = (nparticles / rho) ** 0.5 # length of the box
     inv_length = 1 / volume_length # inverse of the length for use in calculations later
     length = nparticles ** 0.5 # length the particles will be moved per cycle
-    rxy = [None] * nparticles # initial, empty list
+    rx = [None] * nparticles # initial, empty list
+    ry = [None] * nparticles 
     n_root = ceil(sqrt(nparticles)) 
     grid_tile_height = (2 * diameter) # set the height of the grid_tils relative to the particles diameter
     rxy_init = None # initial value of particles, needed to make python happy
@@ -50,17 +51,22 @@ def main():
     #construct an empty square grid
     grid = [[None for column in range(0, Values.n_root)] 
             for row in range(0, Values.n_root)] 
+    #pre allocate the memory for the particles
+    rxy = [[[None],[None]] for xy in range(0, Values.nroot)]
 
-    #Values.rx = define_list(Values.nparticles,Values.volume_length)
-    random.seed(405) #seed the random number generator for result comparison 
-    start = time.time() #record the starting time of the simulation
-    
     #construct a grid that is ceiling(sqrt(n)) x ceiling(sqrt(n)) (int x int)
     build_grid(grid, Values.grid_tile_height) 
 
     #tell each grid which grids it is next to (non-bound box i.e.wrap around)
     populate_grid_neighbors(grid) 
+
+    #Values.rx = define_list(Values.nparticles,Values.volume_length)
+    random.seed(405) #seed the random number generator for result comparison 
+    start = time.time() #record the starting time of the simulation
     
+
+
+
      #define x_position of particles
 #    define_list_x(Values.nparticles,Values.volume_length,Values.diameter,Values.rx)
     #define y_position of particles
@@ -212,6 +218,27 @@ def populate_grid_neighbors(input_grid):
         #endless
     #endfor
 
+
+
+def define_list(nparticles, volume_length, diameter,rx, ry, rxy):
+    # automatically, the particles are sorted in ascending order
+    vector = volume_length / nparticles - diameter
+    xpos = 0
+    for i in range(0, nparticles, ceil(nparticles / 10)):
+        ypos = 0
+        for j in range(i, i + ceil(nparticles / 10)):
+            xpos += random.random() * vector
+            rx[j] = xpos
+            xpos += diameter * (i // (volume_length))
+
+            ypos += random.random() * vector
+            ry[j] = ypos
+            ypos += diameter
+        
+            rxy[j] = [[rx[j]],[ry[j]]]
+    #enddo    
+
+    
 def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension) 
     pass # a keyword that tells the translator (~compiler) to ignore eveyrthing after pass
 
@@ -224,21 +251,7 @@ def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension)
 #    # maybe use some sort of division:
 #        x = (n_root * 2) / particle[x]
 #        grid[x]/particle_list.append(particle)
-    
-        
 
-
-def define_list(nparticles,volume_length,diameter,rx):
-    # automatically, the particles are sorted in ascending order
-    #return [(random.randint(0,(Values.volume_length))) for i in range(nparticles)]
-    vector = volume_length/nparticles - diameter
-    xpos = 0
-    for i in range(1,nparticles + 1):
-        xpos += random.random()*vector
-        rx[i-1]=xpos
-        xpos += diameter
-    #enddo    
-    
 def sort_list(rx): # O(nlogn)
     # sort the list, rx, for simpler implementation 
     # of Single Event Chain in one-dimension
