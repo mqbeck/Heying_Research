@@ -39,7 +39,7 @@ class Grid_tile:
         self.y = j #grid tile's y position at top left corner
         #maybe better to define this as the center
 
-        particle_list = [] 
+        self.particle_list = [] 
         # create an empty list which will later be changed as the grid
         # is populated with particles
     
@@ -243,8 +243,8 @@ def define_list(nparticles, volume_length, diameter,rx, ry, rxy):
 def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension) 
     
     for i in range(0, len(rxy)):
-        x = floor(rxy[i][0] + Values.diameter)
-        y = floor(rxy[i][1] + Values.diameter)
+        x = floor(rxy[i][0] // Values.grid_tile_height)
+        y = floor(rxy[i][1] // Values.grid_tile_height)
         grid[x][y].particle_list.append(rxy[i])
     #psuedo code:
  #   for particle in rxy:
