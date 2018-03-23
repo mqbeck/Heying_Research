@@ -48,10 +48,16 @@ rx = [None] * nparticles
 ry = [None] * nparticles
 rxy = [[[None],[None]] for xy in range(0, nparticles)]
 define_list(nparticles, volume_length, diameter, rx, ry, rxy)
+assert(rxy[0][0] < rxy[1][0]) #first x is smaller than second x
+assert(rxy[0][1] < rxy[1][1]) #first y is smalller than second y
 for i in rxy:
     print(i)
 
 # test cases for the assign_particles_to_grid(rxy, grid) function
-assert(assign_particles_to_grid)
-
+test_particles = [[0,0],[0,1],[1,0],[1,1]]
+assign_particles_to_grid(test_particles, test_grid)
+assert(test_particles[0] in test_grid[0][0].particle_list)
+assert(test_particles[1] in test_grid[0][1].particle_list)
+assert(test_particles[2] in test_grid[1][0].particle_list)
+assert(test_particles[3] in test_grid[1][1].particle_list)
 
