@@ -49,7 +49,7 @@ def main():
     grid = [[None for column in range(0, Values.n_root)] 
             for row in range(0, Values.n_root)] 
     #pre allocate the memory for the particles
-    rxy = [[None,None] for xy in range(0, Values.nroot)]
+    rxy = [[None,None] for xy in range(0, Values.n_root)]
 
     #construct a grid that is ceiling(sqrt(n)) x ceiling(sqrt(n)) (int x int)
     build_grid(grid, Values.grid_tile_height) 
@@ -63,9 +63,11 @@ def main():
     
     #assign particles to grids, (populate grid tile particle lists)
     assign_particles_to_grid(rxy, grid)
+    for i in grid:
+        print(i)
 
     #moves random particle in random direction a set distance, repeat for n cycles
-#     single_event_chain() 
+    single_event_chain(rxy, grid) 
 
     #sorts resultant list for easy manipulation and data analysis
 #    sort_list(Values.rxy) 
@@ -81,7 +83,8 @@ def main():
 #    print(Values.rx) # print final, sorted list to terminal    #build_histogram(Values.rx)
   #  filename = "{0}_particles_{1}_cycles_{2}_minutes.txt".format(Values.nparticles, Values.ncycles, Values.time/60) # custom file name
   #  write_to_file(filename, Values.rx, Values.rx_init) # make a new file using custom file name
-  #  print(Values.rx) # print final, sorted list to terminal for quick review without opening file
+    print('\n\n\n')
+    print(rxy) # print final, sorted list to terminal for quick review without opening file
 
 def build_grid(input_grid, grid_dim): 
     #O(n**2) to build the grid
@@ -231,12 +234,12 @@ def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension)
         y = floor(rxy[i][1] // Values.grid_tile_height)
         grid[x][y].particle_list.append(rxy[i])
         
-def single_event_chain(rxy):
+def single_event_chain(rxy, grid):
     for i in range(0, Values.ncycles):
         direction = random.choice(['UP','DOWN','LEFT','RIGHT'])
         move(direction, rxy)
         
-def move(direction, rxy):
+def move(direction, rxy, grid):
     #Rather than adding up, I decided to subtract - am I pessimistic?
     distance = Values.length
     
