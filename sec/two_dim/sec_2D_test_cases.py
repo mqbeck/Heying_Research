@@ -62,11 +62,3 @@ assert(test_particles[2] in test_grid[0][0].particle_list)
 assert(test_particles[3] in test_grid[1][0].particle_list)
 
 
-
-
-
-
-
-
-
-

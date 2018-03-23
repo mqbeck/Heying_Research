@@ -15,7 +15,6 @@ class Values:
     ry = [None] * nparticles 
     n_root = ceil(sqrt(nparticles)) 
     grid_tile_height = (2 * diameter) # set the height of the grid_tils relative to the particles diameter
-    rxy_init = None # initial value of particles, needed to make python happy
     distances = [] #particle-particle distances to be sorted and counted, per cycle
     histogram = [] #sorted distance, ultimately normalized (summed to one)
     cycles_to_average = 2 # how many cycles to run before taking a histogram measurement
@@ -25,10 +24,8 @@ class Grid_tile:
     # declare a class to make object called grid tiles which have the following attributes
     # a list of neighboring grids, a list of particles within the grid, and a position
     
-
     def __init__(self, i, j):
     # constructor method to build an instance of the class called an object
-                                             # use: x = Grid_tile(i,j)
 
         self.neighbor_list = [[None, None] for i in range(0,8)] 
         # down, up, left, right, up left, up right, down left, down right
@@ -47,7 +44,6 @@ class Grid_tile:
         # list.pop(i) removes and returns the element at position i, 
         # default to the last element
 
-
 def main():
     #construct an empty square grid
     grid = [[None for column in range(0, Values.n_root)] 
@@ -65,17 +61,8 @@ def main():
     random.seed(405) #seed the random number generator for result comparison 
     start = time.time() #record the starting time of the simulation
     
-
-
-
-     #define x_position of particles
-#    define_list_x(Values.nparticles,Values.volume_length,Values.diameter,Values.rx)
-    #define y_position of particles
-#    define_list_y(Values.nparticles,Values.volume_length,Values.diameter,Values.ry)
-
-    #take a list of particles, rxy, and based on location in grid builds a
-    #list of particles in that grid
- #   assign_particles_to_grid(rxy, grid)
+    #assign particles to grids, (populate grid tile particle lists)
+    assign_particles_to_grid(rxy, grid)
 
     #moves random particle in random direction a set distance, repeat for n cycles
 #     single_event_chain() 
@@ -219,8 +206,6 @@ def populate_grid_neighbors(input_grid):
         #endless
     #endfor
 
-
-
 def define_list(nparticles, volume_length, diameter,rx, ry, rxy):
     # automatically, the particles are sorted in ascending order
     vector = volume_length / nparticles - diameter
@@ -239,13 +224,95 @@ def define_list(nparticles, volume_length, diameter,rx, ry, rxy):
             rxy[j] = [rx[j],ry[j]]
     #enddo    
 
-    
 def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension) 
     
     for i in range(0, len(rxy)):
         x = floor(rxy[i][0] // Values.grid_tile_height)
         y = floor(rxy[i][1] // Values.grid_tile_height)
         grid[x][y].particle_list.append(rxy[i])
+        
+def single_event_chain(rxy):
+    for i in range(0, Values.ncycles):
+        direction = random.choice(['UP','DOWN','LEFT','RIGHT'])
+        move(direction, rxy)
+        
+def move(direction, rxy):
+    #Rather than adding up, I decided to subtract - am I pessimistic?
+    distance = Values.length
+    
+    the_chosen_one = random.randint(0, grid)
+    random_number = random.randint(0, len(the_chosen_one.particle_list))
+    rand_particle = the_chosen_one.particle_list(random_number)
+    overlap_count = 0
+    if direction == 'UP':
+            #check particle diameter for collision  with grid above and left/right
+            #move particle from grid list below to grid list above
+            #remove partilce from original list
+            for i in range(1,6):
+                neighbor = the_chosen_one.neighbor_list[i]
+                for particle in neighbor.particle_list:
+                    if(abs(rand_particle[0] - particle[0]) < Values.diameter):
+                        if(abs(rand_particle[1] - particle[1]) < Values.diameter):
+                            overlap_count += 1
+            if (overlap_count == 0):
+                temp = the_chosen_one.particle_list.pop(random_number)
+                the_chosen_one.neighbor_list[1].particle_list.append(temp)
+
+    if direction == 'UP':
+            #check particle diameter for collision  with grid above and left/right
+            #move particle from grid list below to grid list above
+            #remove partilce from original list
+            for i in [1, 2, 3, 4, 5]:
+                neighbor = the_chosen_one.neighbor_list[i]
+                for particle in neighbor.particle_list:
+                    if(abs(rand_particle[0] - particle[0]) < Values.diameter):
+                        if(abs(rand_particle[1] - particle[1]) < Values.diameter):
+                            overlap_count += 1
+            if (overlap_count == 0):
+                temp = the_chosen_one.particle_list.pop(random_number)
+                the_chosen_one.neighbor_list[1].particle_list.append(temp)
+
+    if direction == 'DOWN':
+            #check particle diameter for collision  with grid above and left/right
+            #move particle from grid list below to grid list above
+            #remove partilce from original list
+            for i in [0, 2, 3, 6, 7]:
+                neighbor = the_chosen_one.neighbor_list[i]
+                for particle in neighbor.particle_list:
+                    if(abs(rand_particle[0] - particle[0]) < Values.diameter):
+                        if(abs(rand_particle[1] - particle[1]) < Values.diameter):
+                            overlap_count += 1
+            if (overlap_count == 0):
+                temp = the_chosen_one.particle_list.pop(random_number)
+                the_chosen_one.neighbor_list[1].particle_list.append(temp)
+
+    if direction == 'LEFT':
+            #check particle diameter for collision  with grid above and left/right
+            #move particle from grid list below to grid list above
+            #remove partilce from original list
+            for i in [0, 1, 2, 4, 6]:
+                neighbor = the_chosen_one.neighbor_list[i]
+                for particle in neighbor.particle_list:
+                    if(abs(rand_particle[0] - particle[0]) < Values.diameter):
+                        if(abs(rand_particle[1] - particle[1]) < Values.diameter):
+                            overlap_count += 1
+            if (overlap_count == 0):
+                temp = the_chosen_one.particle_list.pop(random_number)
+                the_chosen_one.neighbor_list[1].particle_list.append(temp)
+
+    if direction == 'RIGHT':
+            #check particle diameter for collision  with grid above and left/right
+            #move particle from grid list below to grid list above
+            #remove partilce from original list
+            for i in [0, 1, 3, 5, 7]:
+                neighbor = the_chosen_one.neighbor_list[i]
+                for particle in neighbor.particle_list:
+                    if(abs(rand_particle[0] - particle[0]) < Values.diameter):
+                        if(abs(rand_particle[1] - particle[1]) < Values.diameter):
+                            overlap_count += 1
+            if (overlap_count == 0):
+                temp = the_chosen_one.particle_list.pop(random_number)
+                the_chosen_one.neighbor_list[1].particle_list.append(temp)
 
 def sort_list(rx): # O(nlogn)
     # sort the list, rx, for simpler implementation 
@@ -301,95 +368,6 @@ def insertion_sort(rx):
             position -= 1
         rx[position] = value
         
-def single_event_chain():
-    for i in range(0, Values.ncycles):
-        direction = random.choice([-1, 1])
-        move(direction)
-        
-def move(direction):
-    rx = Values.rx
-    #Rather than adding up, I decided to subtract - am I pessimistic?
-    distance = Values.length
-    
-    particle = random.randint(0, Values.nparticles - 1)
-    if direction == 1:
-        for i in range(particle, particle + Values.nparticles, direction):
-            #I think that you need to check whether the particles
-            #are closer within the box or within the PBCs
-            j = i
-            k = i + 1
-            if (j > (Values.nparticles - 1)):
-                j -= Values.nparticles
-            if (k > (Values.nparticles - 1)):
-                k -= Values.nparticles
-            #endif
-            vector = abs(rx[k] - rx[j])
-            if rx[j] > rx[k]:
-                traveled = Values.volume_length - vector - Values.diameter
-            #endif
-            #vector -= Values.volume_length*round(vector*Values.inv_length)
-            else:
-                traveled = abs(rx[k] - rx[j]) - Values.diameter
-            
-            if (distance > traveled):
-                rx[j] += traveled
-                distance -= traveled
-            else:
-                rx[j] += distance
-                distance = 0
-            #endif
-            
-            #Since you are moving them to the right, you should
-            #not have to check for the rx[i] < volume_length condition
-            if rx[j] > Values.volume_length:
-                rx[j] -= Values.volume_length
-            #endif
-            if distance == 0:
-                break
-            #endif
-        #enddo
-    elif direction == -1: # negative ouptut implies problem here
-        for i in range(particle, particle - Values.nparticles, direction):
-            j = i
-            k = i - 1
-       #     print("j: ", j, "k: ", k)
-            
-            if (j < 0):
-                j += Values.nparticles
-            #endif
-            if (k < 0):
-                k += Values.nparticles
-            #endif
-            
-            vector = abs(rx[k] - rx[j])
-            if rx[j] < rx[k]:
-                traveled = Values.volume_length - vector - Values.diameter
-            #endif
-            #vector -= Values.volume_length*round(vector*Values.inv_length)
-            else:
-                traveled = abs(rx[k] - rx[j]) - Values.diameter
-            #vector -= Values.volume_length*round(vector*Values.inv_length)
-            #print("vector: ", vector, "traveled: ", traveled)
-            
-            if (distance > traveled):
-                rx[j] -= traveled
-                distance -= traveled
-            else:
-                rx[j] -= distance
-                distance = 0
-            #endif    
-            
-            if rx[j] < 0:
-                rx[j] += Values.volume_length
-            #endif
-            if distance == 0:
-                break
-            #endif
-        #enddo
-    #endif
-
-    Values.rx = rx
-
 def build_histogram(rx): #compute all particle-particle distances and average
     temp_list = [] # this list will hold distances
     total = 0
