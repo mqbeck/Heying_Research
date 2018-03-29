@@ -49,7 +49,11 @@ def main():
     grid = [[None for column in range(0, Values.n_root)] 
             for row in range(0, Values.n_root)] 
     #pre allocate the memory for the particles
-    rxy = [[None,None] for xy in range(0, Values.n_root)]
+    rxy = [[None,None] for xy in range(0, Values.nparticles)]
+
+    #randomly populate particles in ascending order
+    define_list(Values.nparticles, Values.volume_length, Values.diameter,
+                Values.rx, Values.ry, rxy)
 
     #construct a grid that is ceiling(sqrt(n)) x ceiling(sqrt(n)) (int x int)
     build_grid(grid, Values.grid_tile_height) 
@@ -63,8 +67,6 @@ def main():
     
     #assign particles to grids, (populate grid tile particle lists)
     assign_particles_to_grid(rxy, grid)
-    for i in grid:
-        print(i)
 
     #moves random particle in random direction a set distance, repeat for n cycles
     single_event_chain(rxy, grid) 
@@ -216,6 +218,9 @@ def define_list(nparticles, volume_length, diameter,rx, ry, rxy):
     for i in range(0, nparticles, ceil(nparticles / 10)):
         ypos = 0
         for j in range(i, i + ceil(nparticles / 10)):
+            if( j == nparticles):
+                continue
+            #endif
             xpos += random.random() * vector
             rx[j] = xpos
             xpos += diameter * (i // (volume_length))
@@ -230,92 +235,100 @@ def define_list(nparticles, volume_length, diameter,rx, ry, rxy):
 def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension) 
     
     for i in range(0, len(rxy)):
-        x = floor(rxy[i][0] // Values.grid_tile_height)
-        y = floor(rxy[i][1] // Values.grid_tile_height)
+        x = floor(rxy[i][0] / Values.grid_tile_height)
+        y = floor(rxy[i][1] / Values.grid_tile_height)
         grid[x][y].particle_list.append(rxy[i])
         
 def single_event_chain(rxy, grid):
     for i in range(0, Values.ncycles):
         direction = random.choice(['UP','DOWN','LEFT','RIGHT'])
-        move(direction, rxy)
+        move(direction, rxy, grid)
         
 def move(direction, rxy, grid):
     #Rather than adding up, I decided to subtract - am I pessimistic?
     distance = Values.length
     
-    the_chosen_one = random.randint(0, grid)
-    random_number = random.randint(0, len(the_chosen_one.particle_list))
-    rand_particle = the_chosen_one.particle_list(random_number)
+    #keep checking until a particle is found
+    while (True):
+        #choose a random grid tile from 2D grid, grid[row][column]
+        the_chosen_one = random.choice(random.choice(grid))
+
+        #check that there are particles in the grid
+        if (len(the_chosen_one.particle_list) != 0):
+        #choose a random particle from chosen grid tile
+            random_number = random.randint(0, 
+                                    len(the_chosen_one.particle_list) - 1)
+            rand_particle = the_chosen_one.particle_list[random_number]
+            break
+
     overlap_count = 0
     if direction == 'UP':
             #check particle diameter for collision  with grid above and left/right
             #move particle from grid list below to grid list above
             #remove partilce from original list
-            for i in range(1,6):
-                neighbor = the_chosen_one.neighbor_list[i]
-                for particle in neighbor.particle_list:
-                    if(abs(rand_particle[0] - particle[0]) < Values.diameter):
-                        if(abs(rand_particle[1] - particle[1]) < Values.diameter):
-                            overlap_count += 1
-            if (overlap_count == 0):
-                temp = the_chosen_one.particle_list.pop(random_number)
-                the_chosen_one.neighbor_list[1].particle_list.append(temp)
-
-    if direction == 'UP':
-            #check particle diameter for collision  with grid above and left/right
-            #move particle from grid list below to grid list above
-            #remove partilce from original list
             for i in [1, 2, 3, 4, 5]:
-                neighbor = the_chosen_one.neighbor_list[i]
+                address = the_chosen_one.neighbor_list[i]
+                neighbor = grid[address[0]][address[1]]
                 for particle in neighbor.particle_list:
                     if(abs(rand_particle[0] - particle[0]) < Values.diameter):
                         if(abs(rand_particle[1] - particle[1]) < Values.diameter):
                             overlap_count += 1
             if (overlap_count == 0):
                 temp = the_chosen_one.particle_list.pop(random_number)
-                the_chosen_one.neighbor_list[1].particle_list.append(temp)
+                address = the_chosen_one.neighbor_list[1]
+                neighbor = grid[address[0]][address[1]]
+                neighbor.particle_list.append(temp)
 
     if direction == 'DOWN':
             #check particle diameter for collision  with grid above and left/right
             #move particle from grid list below to grid list above
             #remove partilce from original list
             for i in [0, 2, 3, 6, 7]:
-                neighbor = the_chosen_one.neighbor_list[i]
+                address = the_chosen_one.neighbor_list[i]
+                neighbor = grid[address[0]][address[1]]
                 for particle in neighbor.particle_list:
                     if(abs(rand_particle[0] - particle[0]) < Values.diameter):
                         if(abs(rand_particle[1] - particle[1]) < Values.diameter):
                             overlap_count += 1
             if (overlap_count == 0):
                 temp = the_chosen_one.particle_list.pop(random_number)
-                the_chosen_one.neighbor_list[1].particle_list.append(temp)
+                address = the_chosen_one.neighbor_list[0]
+                neighbor = grid[address[0]][address[1]]
+                neighbor.particle_list.append(temp)
 
     if direction == 'LEFT':
             #check particle diameter for collision  with grid above and left/right
             #move particle from grid list below to grid list above
             #remove partilce from original list
             for i in [0, 1, 2, 4, 6]:
-                neighbor = the_chosen_one.neighbor_list[i]
+                address = the_chosen_one.neighbor_list[i]
+                neighbor = grid[address[0]][address[1]]
                 for particle in neighbor.particle_list:
                     if(abs(rand_particle[0] - particle[0]) < Values.diameter):
                         if(abs(rand_particle[1] - particle[1]) < Values.diameter):
                             overlap_count += 1
             if (overlap_count == 0):
                 temp = the_chosen_one.particle_list.pop(random_number)
-                the_chosen_one.neighbor_list[1].particle_list.append(temp)
+                address = the_chosen_one.neighbor_list[2]
+                neighbor = grid[address[0]][address[1]]
+                neighbor.particle_list.append(temp)
 
     if direction == 'RIGHT':
             #check particle diameter for collision  with grid above and left/right
             #move particle from grid list below to grid list above
             #remove partilce from original list
             for i in [0, 1, 3, 5, 7]:
-                neighbor = the_chosen_one.neighbor_list[i]
+                address = the_chosen_one.neighbor_list[i]
+                neighbor = grid[address[0]][address[1]]
                 for particle in neighbor.particle_list:
                     if(abs(rand_particle[0] - particle[0]) < Values.diameter):
                         if(abs(rand_particle[1] - particle[1]) < Values.diameter):
                             overlap_count += 1
             if (overlap_count == 0):
                 temp = the_chosen_one.particle_list.pop(random_number)
-                the_chosen_one.neighbor_list[1].particle_list.append(temp)
+                address = the_chosen_one.neighbor_list[3]
+                neighbor = grid[address[0]][address[1]]
+                neighbor.particle_list.append(temp)
 
 def sort_list(rx): # O(nlogn)
     # sort the list, rx, for simpler implementation 

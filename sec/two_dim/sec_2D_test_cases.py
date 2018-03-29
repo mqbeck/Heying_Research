@@ -41,7 +41,7 @@ assert(test_grid[2][1].neighbor_list ==
 assert(test_grid[2][2].neighbor_list == 
 					[[0,2],[1,2],[2,1],[2,0],[1,1],[1,0],[0,1],[0,0]])
 
-nparticles = 20
+nparticles = 14
 volume_length = (nparticles / 0.5) 
 diameter = 1
 rx = [None] * nparticles
