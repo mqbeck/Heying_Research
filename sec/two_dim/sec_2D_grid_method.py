@@ -1,3 +1,14 @@
+'''
+TO DO
+------
+Set up histogram function
+set up printing function
+sort out sorting function
+'''
+
+
+
+
 from math import *
 import random
 import time
