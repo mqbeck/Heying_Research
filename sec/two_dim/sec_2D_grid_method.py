@@ -1,22 +1,3 @@
-'''
-Possible cause: not implementing move function correctly: update particle,
-    check collisions, but particle new and particle old have the same x or y 
-    because collision is called before particle new is moved and the smalled 
-    distance change is the (potentially) overlapping new and old particles
-Solution: particle new = particle old +/- some distance (radius?) to prevent
-    overlap
-
-same Problem different words: particle new == particle old
-possible cause: move function updating new particle improperly
-    updates particle to have new x or y position, then checks for collisions,
-    but the new particle and old particle have the same x or y 
-    coordinate so the change in that direction (x or y) is zero
-solution: properly implement a move funtion with a correct distance
-another solution: ignore particles that won't collide because they're in the
-    opposite direction of movement (i.e. for up: if ynew - yold > 0 ignore)
-'''
-
-
 from math import *
 import random
 import time
@@ -29,7 +10,6 @@ class Values:
     # particle density - how close the particles will be at simulation start
     rho = 0.5 
     volume_length = (nparticles / rho) ** 0.5 # length of the box
-    print('length: ', volume_length)
     # inverse of the length for use in calculations later
     inv_length = 1 / volume_length 
     length = nparticles ** 0.5 # length the particles will be moved per cycle
@@ -45,10 +25,14 @@ class Values:
     time # the time is takes to run the simulation 
          # doesn't include minor set up and file printing
 
+    #control variables
+    pause = False
+    extra_print = True
+
 class Grid_tile:
-    # declare a class to make object called grid tiles which have the 
+    '''# declare a class to make object called grid tiles which have the 
     # following attributes a list of neighboring grids, a list of particles 
-    # within the grid, and a position
+    # within the grid, and a position '''
     
     def __init__(self, i, j):
     # constructor method to build an instance of the class called an object
@@ -70,10 +54,12 @@ class Grid_tile:
         # list.pop(i) removes and returns the element at position i, 
         # default to the last element
 
+    # tell python how to print a Grid_tile
     def __repr__(self):
         return '[{},{}]'.format(self.x, self.y)
 
 def main():
+    '''One function to call them all'''
     #construct an empty square grid
     grid = [[None for column in range(0, Values.n_root)] 
             for row in range(0, Values.n_root)] 
@@ -116,16 +102,18 @@ def main():
   #  filename = "{0}_particles_{1}_cycles_{2}_minutes.txt".format(Values.nparticles, Values.ncycles, Values.time/60) # custom file name
   #  write_to_file(filename, Values.rx, Values.rx_init) # make a new file using custom file name
     rxy = sorted(rxy)
-    print('\n\n\n')
-    print("Start\tEnd")
+    print('\n\n')
+    print("Start\t\t\tEnd")
     for i in range(0,len(start_rxy)):
-        print("{}\t{}".format(start_rxy[i], rxy[i]))
+        print("{} \t {}".format(start_rxy[i], rxy[i]))
 #    print(rxy) # print final, sorted list to terminal for quick review without opening file
 
 def build_grid(input_grid, grid_dim): 
+    """
     #O(n**2) to build the grid
     # populates the grid with grid tiles with dimensions 2*particle diameter 
     #(each grid can hold 4 particles)
+    """
 
     for i in range(0, len(input_grid[0])):
        for j in range(0, len(input_grid[0])):
@@ -134,12 +122,11 @@ def build_grid(input_grid, grid_dim):
     #endfor
 
 def populate_grid_neighbors(input_grid): 
-    # O(n) to populate nearest neighbor list
-
+    '''# O(n) to populate nearest neighbor list'''
     grid_size = len(input_grid[0]) 
     for i in range(0, grid_size ** 2):
-    # indices start at 0 and end at n-1
-    # integer division and remainder to interate though rows and columns: 
+        # indices start at 0 and end at n-1
+        # integer division and remainder to interate though rows and columns: 
 
         if (i == 0): # first grid_tile
             input_grid[i][i].neighbor_list = [
@@ -246,23 +233,24 @@ def populate_grid_neighbors(input_grid):
     #endfor
 
 def define_list(nparticles, volume_length, diameter, rxy):
+    '''
     # automatically, the particles are sorted in ascending order
-    '''set this up on the grid using the grid size'''
     # one particle per grid space until no more particles
 
     # divide the particles by grid length and start filling the
     # grid (it doesn't matter how they start)
+    '''
     
     for i in range(0, nparticles):
         rxy[i] = [i // Values.volume_length,
                     i % Values.volume_length]
 
-    for i in rxy:
-        print(i)
+    if (Values.extra_print):
+        for i in rxy:
+            print(i)
     #enddo    
 
 def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension) 
-    
     for i in range(0, len(rxy)):
         x = floor(rxy[i][0] / Values.grid_tile_height)
         y = floor(rxy[i][1] / Values.grid_tile_height)
@@ -272,10 +260,12 @@ def single_event_chain(rxy, grid):
     for i in range(0, Values.ncycles):
         particle, tile, position = select_particle_and_tile(grid)
 #        direction = random.choice(['UP','DOWN','LEFT','RIGHT'])
-        direction = "UP"
+        direction = random.choice(['UP', 'DOWN'])
+        direction  = 'UP'
         move(direction, rxy, grid, particle, tile, position)
-        if (i//10):
-            print("cycle: ",i)
+        if (Values.extra_print):
+            if (i//10):
+                print("cycle: ",i)
         
 def select_particle_and_tile(grid):
     while (True):
@@ -301,6 +291,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
     neighbor_tile = None
 
     if (direction == 'UP'):
+        '''Move the particle up'''
         # up, left, right, up-left, up-right
         neighbor_tiles = [1, 2, 3, 4, 5]
 
@@ -311,21 +302,20 @@ def check_for_collisions(direction, grid, rand_particle, tile):
 
             x_distance_btwn = abs(rand_particle[0] - particle[0])
 
-            if (particle[1] > rand_particle[1] or
-                particle[1] < (rand_particle[1] - Values.grid_tile_height)):
-
+            # don't check particles below this particle (consider P.B.C.)
+            if (particle[1] > rand_particle[1]):
                 y_distance_btwn = abs(rand_particle[1] - particle[1])
 
             # if collisions exist, record them
-            if (x_distance_btwn < Values.grid_tile_height):
+            if (x_distance_btwn < Values.diameter):
                 if (y_distance_btwn < Values.grid_tile_height):
                     overlap_count += 1
+                    dy = sqrt(1 - x_distance_btwn**2)
                     next_particle.append([sqrt(x_distance_btwn**2 +
                                         y_distance_btwn**2), particle,
                                         [tile.y//Values.grid_tile_height,
                                         tile.x//Values.grid_tile_height],
-                                        x_distance_btwn])
-                    return overlap_count, sorted(next_particle)
+                                        y_distance_btwn - dy])
 
         #check neighbors for collisions
         for i in neighbor_tiles:
@@ -338,7 +328,57 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                 x_distance_btwn = abs(rand_particle[0] - particle[0])
                 # dont check particle behind rand particle
                 if (particle[1] > rand_particle[1] or
-                    particle[1] < (rand_particle[1] -
+                    (particle[1] > (rand_particle[1] - Values.length))):
+
+                    y_distance_btwn = abs(rand_particle[1] - particle[1])
+
+                # if collisions exist, record them
+                if (x_distance_btwn < Values.grid_tile_height):
+                    if (y_distance_btwn < Values.grid_tile_height):
+                        overlap_count += 1
+                        dy = sqrt(1 - x_distance_btwn**2)
+                        next_particle.append([sqrt(x_distance_btwn**2 +
+                                            y_distance_btwn**2), particle,
+                                            tile.neighbor_list[i],
+                                            y_distance_btwn - dy])
+    elif (direction == 'DOWN'):
+        '''Move the particle down'''
+        # down, left, right, down-left, down-right
+        neighbor_tiles = [0, 2, 3, 6, 7]
+        #check self for collisions
+        for particle in tile.particle_list:
+            if (particle == rand_particle):
+                continue
+
+            x_distance_btwn = abs(rand_particle[0] - particle[0])
+
+            if (particle[1] < rand_particle[1] or
+                particle[1] > (rand_particle[1] - Values.grid_tile_height)):
+
+                y_distance_btwn = abs(rand_particle[1] - particle[1])
+
+            # if collisions exist, record them
+            if (x_distance_btwn < Values.diameter):
+                if (y_distance_btwn < Values.grid_tile_height):
+                    overlap_count += 1
+                    next_particle.append([sqrt(x_distance_btwn**2 +
+                                        y_distance_btwn**2), particle,
+                                        [tile.y//Values.grid_tile_height,
+                                        tile.x//Values.grid_tile_height],
+                                        x_distance_btwn])
+
+        #check neighbors for collisions
+        for i in neighbor_tiles:
+            # ith neighbor in the neighbor list
+            neighbor_tile = tile.neighbor_list[i]
+            neighbor = grid[neighbor_tile[0]][neighbor_tile[1]]
+            for particle in neighbor.particle_list:
+                if (particle == rand_particle):
+                    continue
+                x_distance_btwn = abs(rand_particle[0] - particle[0])
+                # dont check particle behind rand particle
+                if (particle[1] < rand_particle[1] or
+                    particle[1] > (rand_particle[1] -
                     Values.grid_tile_height)):
 
                     y_distance_btwn = abs(rand_particle[1] - particle[1])
@@ -351,38 +391,9 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                                             y_distance_btwn**2), particle,
                                             tile.neighbor_list[i],
                                             x_distance_btwn])
-    elif (direction == 'DOWN'):
-        # up, left, right, up-left, up-right
-        neighbor_tiles = [0, 2, 3, 6, 7]
-        #check neighbors for collisions
-        for i in neighbor_tiles:
-            # ith neighbor in the neighbor list
-            neighbor_tile = tile.neighbor_list[i]
-            neighbor = grid[neighbor_tile[0]][neighbor_tile[1]]
-            for particle in neighbor.particle_list:
-                x_distance_btwn = abs(rand_particle[0] - particle[0])
-                if (particle[1] < rand_particle[1] or
-                    particle[1] > (rand_particle[1] - Values.grid_tile_height)):
-                    y_distance_btwn = abs(rand_particle[1] - particle[1])
-                # if collisions exist, record them
-                if (x_distance_btwn < Values.diameter):
-                    if (y_distance_btwn < Values.diameter):
-                        overlap_count += 1
-                        next_particle.append([sqrt(x_distance_btwn**2 +
-                                            y_distance_btwn**2), particle])
-            #check self for collisions
-            for particle in tile.particle_list:
-                x_distance_btwn = abs(rand_particle[0] - particle[0])
-                if (particle[1] < rand_particle[1] or
-                    particle[1] > (rand_particle[1] - Values.grid_tile_height)):
-                    y_distance_btwn = abs(rand_particle[1] - particle[1])
-                # if collisions exist, record them
-                if (x_distance_btwn < Values.diameter):
-                    if (y_distance_btwn < Values.diameter):
-                        overlap_count += 1
-                        next_particle.append([sqrt(x_distance_btwn**2 +
-                                            y_distance_btwn**2), particle])
     elif (direction == 'LEFT'):
+        '''Move particle left'''
+        #update this comment
         # up, left, right, up-left, up-right
         neighbor_tiles = [0, 1, 2, 4, 6]
         #check neighbors for collisions
@@ -414,6 +425,8 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                         next_particle.append([sqrt(x_distance_btwn**2 +
                                             y_distance_btwn**2), particle])
     elif (direction == 'RIGHT'):
+        '''Move particle right'''
+        # update this comment
         # up, left, right, up-left, up-right
         neighbor_tiles = [0, 1, 3, 5, 7]
         #check neighbors for collisions
@@ -444,8 +457,6 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                         overlap_count += 1
                         next_particle.append([sqrt(x_distance_btwn**2 +
                                             y_distance_btwn**2), particle])
-    else:
-        pass
 
     # returns the number of overlaps, the list of overlapping particles,
     # and the tile in which the particles were found
@@ -458,33 +469,43 @@ def move(direction, rxy, grid, particle, tile, position):
     x_distance_btwn = None
     y_distance_btwn = None
     neighbor_tile = None
-    print("list{}: {} position: {}".format([tile.x, tile.y], tile.particle_list, position))
+    if (Values.extra_print):
+        print("list{}: {} position: {}".format([tile.x, tile.y], tile.particle_list, position))
     for g_row in grid:
         for g_column in g_row:
-            print('list{}: {}'.format([g_column], g_column.particle_list))
+            if (Values.extra_print):
+                print('list{}: {}'.format([g_column], g_column.particle_list))
 
     if direction == 'UP':
-#        while (distance > 0):
-        for counter in range(11):
-            print("distance: ",distance)
-            #check particle diameter for collision  with grid above and left/right
-            #move particle from grid list below to grid list above
-            #remove particle from original list
-            # update particle position and movement
+        '''check particle for collisions with grid above and left/right
+        move particle from grid list below to grid list above
+        remove particle from original list
+        update particle position and movement'''
+        while (distance > 0):
+            counter = -1
+            counter += 1
+#        for counter in range(11):
+            if (Values.extra_print):
+                print("distance: ",distance)
 
             # check for collisions
             overlap_count, next_particle = check_for_collisions(
                 direction, grid, particle, tile)
+
             # no collisions
-            # next_particle should = None
             if (overlap_count == 0):
-                print("particles: {} position: {}".format(tile.particle_list,
-                                                            position))
+                if (Values.extra_print):
+                    print("particles: {} position: {}".format(
+                            tile.particle_list, position))
+
                 # remove particle from starting grid
                 temp = tile.particle_list.pop(position)
                 # update particle (moving up)
                 # perhaps this should be minus: look into how the grid is implemented
                 temp[1] += Values.grid_tile_height
+                # periodic boundary condition
+                if (temp[1] > Values.volume_length):
+                    temp[1] = temp[1] - Values.volume_length
                 # determine destination grid (up is second in the list)
                 destination = (grid[tile.neighbor_list[1][0]]
                                  [tile.neighbor_list[1][1]])
@@ -500,78 +521,129 @@ def move(direction, rxy, grid, particle, tile, position):
             # collision
             # next_partcile should = [distance to nearest particle, particle,
             #                           grid that particle is in]
+
             if (overlap_count > 0):
                 # the closest collision
-                distance_to_particle, particle_hit, neighbor_tile, delta_x = next_particle[1]
-                print("particle_hit: {} particle moving: {}".format(
+                # second value because the first is broken, dummy data
+                distance_to_particle, particle_hit, neighbor_tile, delta_y = next_particle[1]
+                if (Values.extra_print):
+                    print("particle_hit: {} particle moving: {}".format(
                         particle_hit, particle))
                 #the index of the particle that will be hit
                 neigh_x = neighbor_tile[0]
                 neigh_y = neighbor_tile[1]
-                print("particle list{}: {}".format([neigh_x, neigh_y], grid[neigh_x][neigh_y].particle_list))
+                if (Values.extra_print):
+                    print("particle list{}: {}".format([neigh_x, neigh_y], grid[neigh_x][neigh_y].particle_list))
                 index = grid[neigh_x][neigh_y].particle_list.index(
                     particle_hit)
 
                 # update particle (moving up)
                 # perhaps this should be minus: look into how the grid is implemented
-                delta_y = (abs(sqrt(Values.diameter - delta_x**2)))
                 particle[1] += delta_y
+                # periodic boundary condition
+                if (particle[1] > Values.volume_length):
+                    particle[1] = particle[1] - Values.volume_length
                 # update cycle movement
-                print("distance: {} delta_y: {}".format(distance, delta_y))
+                if (Values.extra_print):
+                    print("distance: {} delta_y: {}".format(distance, delta_y))
                 distance -= delta_y
                 # move the next particle (particle being hit)
-                print('Counter: {0}, Hit: {1}, Start: {2}, Delta: {3}'.format(
-                        counter, particle_hit, particle, delta_y))
                 particle = particle_hit
                 position = index
                 tile = grid[neigh_x][neigh_y]
 
+                if (Values.pause):
+                    input()
+
 
 
     if direction == 'DOWN':
-        while (distance > 0):
-            print(distance)
-            #check particle diameter for collision  with grid below and left/right
-            #move particle from grid list above to grid list below
+#        while (distance > 0):
+        for counter in range(11):
+            if (Values.extra_print):
+                print("distance: ",distance)
+            #check particle diameter for collision  with grid above and left/right
+            #move particle from grid list below to grid list above
             #remove particle from original list
             # update particle position and movement
 
             # check for collisions
-            overlap_count, next_particle = check_for_collisions(direction, grid,
-                                                                particle, tile)
+            overlap_count, next_particle = check_for_collisions(
+                direction, grid, particle, tile)
             # no collisions
+            # next_particle should = None
             if (overlap_count == 0):
+                if (Values.extra_print):
+                    print("particles: {} position: {}".format(tile.particle_list,
+                                                            position))
                 # remove particle from starting grid
                 temp = tile.particle_list.pop(position)
-                # update particle (moving down)
-                # perhaps this should be plus:  look into how the grid is implemented
+                # update particle (moving up)
+                # perhaps this should be plus: look into how the grid is implemented
                 temp[1] -= Values.grid_tile_height
+                # periodic boundary condition
+                if (temp[1] < 0):
+                    temp[1] = temp[1] + Values.volume_length
                 # determine destination grid (down is first in the list)
-                destination = tile.neighbor_list[0]
+                # grabs the x and the y value of the first neighbor
+                destination = (grid[tile.neighbor_list[0][0]]
+                                 [tile.neighbor_list[0][1]])
                 # put particle in destination grid
                 destination.particle_list.append(temp)
                 # update cycle movement
                 distance -=  Values.grid_tile_height
                 # move the next particle (last particle in the new list)
                 particle = destination.particle_list[-1]
-                position = len(destination.particle_list[-1])
+                position = len(destination.particle_list) - 1
+                tile = destination
 
             # collision
+            # next_partcile should = [distance to nearest particle, particle,
+            #                           grid that particle is in]
             if (overlap_count > 0):
                 # the closest collision
-                distance_to_particle, particle_being_hit = next_particle[1]
-                #the index of the particle that will be hit
-                index = tile.particle_list.index(particle_being_hit)
+                from_next = next_particle[1]
+                distance_to_particle = from_next[0]
+                particle_hit = from_next[1]
+                neighbor_tile = from_next[2]
+                delta_x = from_next[3]
 
-                # update particle (moving down)
-                # perhaps this should be plus:  look into how the grid is implemented
-                delta_y = abs(particle_being_hit[1] - particle[1])
+                if (Values.extra_print):
+                    print("particle_hit: {} particle moving: {}".format(
+                        particle_hit, particle))
+
+                #the index of the particle that will be hit
+                neigh_x = neighbor_tile[0]
+                neigh_y = neighbor_tile[1]
+                if (Values.extra_print):
+                    print("particle list{}: {}".format([neigh_x, neigh_y],
+                            grid[neigh_x][neigh_y].particle_list))
+                index = grid[neigh_x][neigh_y].particle_list.index(
+                    particle_hit)
+
+                # update particle (moving up)
+                # perhaps this should be minus: look into how the grid is implemented
+                delta_y = (abs(sqrt(Values.diameter - delta_x**2)))
                 particle[1] -= delta_y
+                # periodic boundary condition
+                if (particle[1] < 0):
+                    particle[1] = particle[1] + Values.volume_length
                 # update cycle movement
+                if (Values.extra_print):
+                    print("distance: {} delta_y: {}".format(distance, delta_y))
                 distance -= delta_y
                 # move the next particle (particle being hit)
-                particle = particle_being_hit
+                if (Values.extra_print):
+                    print('Counter: {0}, Hit: {1}, ' + 
+                            'Start: {2}, Delta: {3}'.format(
+                            counter, particle_hit, particle, delta_y))
+                particle = particle_hit
                 position = index
+                tile = grid[neigh_x][neigh_y]
+
+                if (Values.pause):
+                    input()
+
 
     if direction == 'LEFT':
         while (distance > 0):
@@ -664,12 +736,14 @@ def move(direction, rxy, grid, particle, tile, position):
                 position = index
 
 def sort_list(rx): # O(nlogn)
+    '''
     # sort the list, rx, for simpler implementation 
     # of Single Event Chain in one-dimension
     
     # under the advisement of of Joe DeLuca this sort will
     # follow the merge sort algorithm until n <= 20 at 
     # which point it will become an insertion sort
+    '''
     
     if len(rx) < 20:
         insertion_sort(rx) 
@@ -735,28 +809,32 @@ def write_to_file(file_name, rx, rx_init):
     output_file = open(file_name, 'w')
     
     output_file.write(
-"""System parameters
+    """     System parameters
+    -------------------------------------
 
-Number of particles:        {0:>7.4f}
-Number of Cycles:           {1:>7.4f}
-System time (seconds):      {2:>7.4f}
-Rho:                        {3:>7.4f}
-Volume Length:              {4:>7.4f}
-Lemgth:                     {5:>7.4f}
+    Number of particles:        {0:>7.4f}
+    Number of Cycles:           {1:>7.4f}
+    System time (seconds):      {2:>7.4f}
+    Rho:                        {3:>7.4f}
+    Volume Length:              {4:>7.4f}
+    Lemgth:                     {5:>7.4f}
 
-Initial      Final  
+    -------------------------------------
+    
+    Initial      Final  
 
-""".format(
+    """.format(
             Values.nparticles, Values.ncycles, Values.time,
             Values.rho, Values.volume_length, Values.nparticles ** 0.5))
     
     for i in range(len(rx)):
         output_file.write("{0:>7.4f} {1:>7.4f} \n".format(rx_init[i], rx[i]))
 
-    if (len(Values.histogram) > 1): #only print the histrogram if it has values
+    if (len(Values.histogram) > 1): #print the histrogram if it has values
         for i in range(len(Values.histogram) - 1):
             ravg = 0.01 * (2.0 * i + 1.0) / 2.0
-            output_file.write("ravg: {0:7.4f}    histogram: {1:7.4f}\n".format(ravg, Values.histogram[i]))
+            output_file.write("ravg: {0:7.4f}\thistogram: {1:7.4f}\n".format(
+                                ravg, Values.histogram[i]))
 
 
 if __name__ == "__main__":
