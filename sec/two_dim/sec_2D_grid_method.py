@@ -303,6 +303,9 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             # don't check particles below this particle (no PBC in same tile)
             if (particle[1] < rand_particle[1]):
                 continue
+            else:
+                y_distance_btwn = abs(rand_particle[1] - particle[1])
+                
 
             x_distance_btwn = abs(rand_particle[0] - particle[0])
 
@@ -323,6 +326,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             neighbor_tile = tile.neighbor_list[i]
             neighbor = grid[neighbor_tile[0]][neighbor_tile[1]]
             for particle in neighbor.particle_list:
+                #don't collide with self (one particle in two tiles)
                 if (particle == rand_particle):
                     continue
                 x_distance_btwn = abs(rand_particle[0] - particle[0])
@@ -330,9 +334,11 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                 if (particle[1] > rand_particle[1]):
                     y_distance_btwn = abs(rand_particle[1] - particle[1])
 
-                if ((particle[1] + Values.length)  > rand_particle[1]):
+                elif ((particle[1] + Values.length)  > rand_particle[1]):
                     y_distance_btwn = abs(rand_particle[1] -
                                             (particle[1] + Values.length))
+                else:
+                    continue
 
                 # if collisions exist, record them
                 if (x_distance_btwn < Values.grid_tile_height):
@@ -343,10 +349,13 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                                             y_distance_btwn**2), particle,
                                             tile.neighbor_list[i],
                                             y_distance_btwn - dy])
+
+
     elif (direction == 'DOWN'):
         '''Move the particle down'''
         # down, left, right, down-left, down-right
         neighbor_tiles = [0, 2, 3, 6, 7]
+
         #check self for collisions
         for particle in tile.particle_list:
             # don't collide with self
@@ -355,6 +364,9 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             # don't check particles above this particle (no PBC in same tile)
             if (particle[1] > rand_particle[1]):
                 continue
+            else:
+                y_distance_btwn = abs(rand_particle[1] - particle[1])
+                
 
             x_distance_btwn = abs(rand_particle[0] - particle[0])
 
@@ -375,16 +387,19 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             neighbor_tile = tile.neighbor_list[i]
             neighbor = grid[neighbor_tile[0]][neighbor_tile[1]]
             for particle in neighbor.particle_list:
+                #don't collide with self (one particle in two tiles)
                 if (particle == rand_particle):
                     continue
                 x_distance_btwn = abs(rand_particle[0] - particle[0])
-                # dont check particles below (consider PBC)
-                if (particle[1] > rand_particle[1]):
+                # dont check particles above (consider PBC)
+                if (particle[1] < rand_particle[1]):
                     y_distance_btwn = abs(rand_particle[1] - particle[1])
 
-                if ((particle[1] + Values.length)  > rand_particle[1]):
+                elif ((particle[1] + Values.length) < rand_particle[1]):
                     y_distance_btwn = abs(rand_particle[1] -
                                             (particle[1] + Values.length))
+                else:
+                    continue
 
                 # if collisions exist, record them
                 if (x_distance_btwn < Values.grid_tile_height):
@@ -395,6 +410,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                                             y_distance_btwn**2), particle,
                                             tile.neighbor_list[i],
                                             y_distance_btwn - dy])
+
 
     elif (direction == 'LEFT'):
         '''Move particle left'''
