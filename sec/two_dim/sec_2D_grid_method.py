@@ -14,7 +14,7 @@ import copy
 class Values:
     diameter = 1  # particle diameter (for hard sphere model)
     ncycles = 200 # number of times a particle will be selceted and moved
-    nparticles = 17 # number of particles
+    nparticles = 18 # number of particles
     # particle density - how close the particles will be at simulation start
     rho = 0.5 
     volume_length = (nparticles / rho) ** 0.5 # length of the box
@@ -34,8 +34,8 @@ class Values:
          # doesn't include minor set up and file printing
 
     #control variables
-    pause = False
-    extra_print = False
+    pause = True
+    extra_print = True
 
 class Grid_tile:
     '''Declare a class to make object called grid tiles which have the 
@@ -116,15 +116,15 @@ def main():
 
     temp_list = [] 
     for i in range(0, len(rxy) - 1):
-        for j in range(1, len(rxy)):
-            if (i == j):
-                continue
-            temp_list.append([sqrt((rxy[i][0] - rxy[j][0])**2 +
-                            (rxy[j][1] - rxy[j][1])**2),i,j])
-    print('\n\n','\nVector Distance:\n------------------\n')
+        for j in range(i + 1, len(rxy)):
+            x_dist = abs(rxy[i][0] - rxy[j][0])
+            y_dist = abs(rxy[i][1] - rxy[j][1])
+            temp_list.append([sqrt(x_dist**2 + y_dist**2),i,j])
+    print('\n\n','\nVector Distances < 1:\n------------------\n')
     temp_list = sorted(temp_list)
     for i in temp_list:
-        print(i)
+        if (i[0] < 1):
+            print(i)
 
 #    print(rxy) # print final, sorted list to terminal for quick review without opening file
 
@@ -265,8 +265,8 @@ def define_list(nparticles, volume_length, diameter, rxy):
     '''
     
     for i in range(0, nparticles):
-        rxy[i] = [i // Values.volume_length,
-                    i % Values.volume_length]
+        rxy[i] = [i // (Values.volume_length - 1),
+                    i % floor(Values.volume_length - 1)]
 
     if (Values.extra_print):
         for i in rxy:
@@ -283,7 +283,7 @@ def single_event_chain(rxy, grid):
     for i in range(0, Values.ncycles):
         particle, tile, position = select_particle_and_tile(grid)
         direction = random.choice(['UP','DOWN','LEFT','RIGHT'])
-#        direction = 'UP'
+        direction = 'UP'
 
         if (Values.extra_print):
             print('direction: ', direction)
@@ -326,17 +326,23 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             if (particle == rand_particle):
                 continue
             # don't check particles below this particle (no PBC in same tile)
+            y_distance_btwn = abs(rand_particle[1] - particle[1])
+            y_distance_pbc = (y_distance_btwn - Values.volume_length*
+                            round(y_distance_btwn*Values.inv_length))
+            if (y_distance_pbc > 1.0 ):
+                continue
             if (particle[1] < rand_particle[1]):
+                print(y_distance_pbc)
                 continue
             else:
                 y_distance_btwn = abs(rand_particle[1] - particle[1])
                 y_distance_pbc = (y_distance_btwn - Values.volume_length*
-                                floor(y_distance_btwn*Values.inv_length))
+                                round(y_distance_btwn*Values.inv_length))
                 
 
             x_distance_btwn = abs(rand_particle[0] - particle[0])
             x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                                floor(x_distance_btwn*Values.inv_length))
+                                round(x_distance_btwn*Values.inv_length))
 
             # if collisions exist, record them
             if (x_distance_pbc < Values.diameter):
@@ -347,7 +353,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                                         y_distance_btwn**2), particle,
                                         [tile.y//Values.grid_tile_height,
                                         tile.x//Values.grid_tile_height],
-                                        y_distance_pbc - dy])
+                                        abs(y_distance_pbc - dy)])
 
         #check neighbors for collisions
         for i in neighbor_tiles:
@@ -360,21 +366,19 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                     continue
                 x_distance_btwn = abs(rand_particle[0] - particle[0])
                 x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                                floor(x_distance_btwn*Values.inv_length))
+                                round(x_distance_btwn*Values.inv_length))
                 # dont check particles below (consider PBC)
                 if (particle[1] > rand_particle[1]):
                     y_distance_btwn = abs(rand_particle[1] - particle[1])
                     y_distance_pbc = (y_distance_btwn - Values.volume_length*
-                                floor(y_distance_btwn*Values.inv_length))
+                                round(y_distance_btwn*Values.inv_length))
 
                 elif ((particle[1] + Values.volume_length) > 
                         (rand_particle[1])):
                     y_distance_btwn = abs(rand_particle[1] -
                                         (particle[1] + Values.volume_length))
                     y_distance_pbc = (y_distance_btwn - Values.volume_length*
-                                floor(y_distance_btwn*Values.inv_length))
-                else:
-                    continue
+                                round(y_distance_btwn*Values.inv_length))
 
                 # if collisions exist, record them
                 if (x_distance_pbc < Values.diameter):
@@ -384,7 +388,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                         next_particle.append([sqrt(x_distance_pbc**2 +
                                             y_distance_pbc**2), particle,
                                             tile.neighbor_list[i],
-                                            y_distance_pbc - dy])
+                                            abs(y_distance_pbc - dy)])
 
     elif (direction == 'DOWN'):
         '''Check collison down'''
@@ -402,12 +406,12 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             else:
                 y_distance_btwn = abs(rand_particle[1] - particle[1])
                 y_distance_pbc = (y_distance_btwn - Values.volume_length*
-                                floor(y_distance_btwn*Values.inv_length))
+                                round(y_distance_btwn*Values.inv_length))
                 
 
             x_distance_btwn = abs(rand_particle[0] - particle[0])
             x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                        floor(x_distance_btwn*Values.inv_length))
+                        round(x_distance_btwn*Values.inv_length))
 
             # if collisions exist, record them
             if (x_distance_pbc < Values.diameter):
@@ -434,14 +438,14 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                 if (particle[1] < rand_particle[1]):
                     y_distance_btwn = abs(rand_particle[1] - particle[1])
                     y_distance_pbc = (y_distance_btwn - Values.volume_length*
-                                floor(y_distance_btwn*Values.inv_length))
+                                round(y_distance_btwn*Values.inv_length))
 
                 elif ((particle[1] + Values.volume_length) > 
                         (rand_particle[1] )):
                     y_distance_btwn = abs(rand_particle[1] -
                                         (particle[1] + Values.volume_length))
                     y_distance_pbc = (y_distance_btwn - Values.volume_length*
-                                floor(y_distance_btwn*Values.inv_length))
+                                round(y_distance_btwn*Values.inv_length))
                 else:
                     continue
 
@@ -470,7 +474,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             else:
                 x_distance_btwn = abs(rand_particle[0] - particle[0])
                 x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                                floor(x_distance_btwn*Values.inv_length))
+                                round(x_distance_btwn*Values.inv_length))
 
             y_distance_btwn = abs(rand_particle[1] - particle[1])
 
@@ -499,14 +503,14 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                 if (particle[0] > rand_particle[0]):
                     x_distance_btwn = abs(rand_particle[0] - particle[0])
                     x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                                floor(x_distance_btwn*Values.inv_length))
+                                round(x_distance_btwn*Values.inv_length))
 
                 elif ((particle[0] + Values.volume_length) > 
                         (rand_particle[0] )):
                     x_distance_btwn = abs(rand_particle[0] -
                                         (particle[0] + Values.volume_length))
                     x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                                floor(x_distance_btwn*Values.inv_length))
+                                round(x_distance_btwn*Values.inv_length))
                 else:
                     continue
 
@@ -535,7 +539,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             else:
                 x_distance_btwn = abs(rand_particle[0] - particle[0])
                 x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                                floor(x_distance_btwn*Values.inv_length))
+                                round(x_distance_btwn*Values.inv_length))
 
             y_distance_btwn = abs(rand_particle[1] - particle[1])
 
@@ -564,14 +568,14 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                 if (particle[0] > rand_particle[0]):
                     x_distance_btwn = abs(rand_particle[0] - particle[0])
                     x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                                floor(x_distance_btwn*Values.inv_length))
+                                round(x_distance_btwn*Values.inv_length))
 
                 elif ((particle[0] + Values.volume_length) < 
                         (rand_particle[0] )):
                     x_distance_btwn = abs(rand_particle[0] -
                                         (particle[0] + Values.volume_length))
                     x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                                floor(x_distance_btwn*Values.inv_length))
+                                round(x_distance_btwn*Values.inv_length))
                 else:
                     continue
 
@@ -908,63 +912,6 @@ def move(direction, rxy, grid, particle, tile, position):
                 if (Values.pause):
                     input()
 
-
-def sort_list(rx): # O(nlogn)
-    '''
-    sort the list, rx, for simpler implementation 
-    of Single Event Chain in one-dimension
-    
-    under the advisement of of Joe DeLuca this sort will
-    follow the merge sort algorithm until n <= 20 at 
-    which point it will become an insertion sort
-    '''
-    
-    if len(rx) < 20:
-        insertion_sort(rx) 
-    else:
-        middle = len(rx) // 2
-        lefthalf = rx[:middle]  # this is Python's "slice" notation
-        righthalf = rx[middle:] # string[start:stop:step]
-
-        sort_list(lefthalf)
-        sort_list(righthalf)
-
-        i = 0
-        j = 0
-        k = 0
-        while i < len(lefthalf) and j < len(righthalf):
-            if lefthalf[i] < righthalf[j]:
-                rx[k] = lefthalf[i]
-                i = i + 1
-            else:
-                rx[k]=righthalf[j]
-                j = j + 1
-            k = k + 1
-
-        while i < len(lefthalf):
-            rx[k] = lefthalf[i]
-            i = i + 1
-            k = k + 1
-
-        while j < len(righthalf):
-            rx[k] = righthalf[j]
-            j = j + 1
-            k = k + 1
-    Values.rx = rx
-
-def insertion_sort(rx):
-    position = None
-    value = None
-               
-    for i in range(1, len(rx)):
-        value = rx[i]
-        position = i
-                
-        while position > 0 and rx[position - 1] > value:
-            rx[position] = rx[position - 1]       
-            position -= 1
-        rx[position] = value
-        
 def build_histogram(rx): #compute all particle-particle distances and average
     temp_list = [] # this list will hold distances
     total = 0
