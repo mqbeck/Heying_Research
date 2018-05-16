@@ -11,6 +11,10 @@ import random
 import time
 import copy
 
+# some imports to explore graphing options
+#import matplotlib.plyplot as plt
+#import numpy as np
+
 class Values:
     diameter = 1  # particle diameter (for hard sphere model)
     ncycles = 200 # number of times a particle will be selceted and moved
@@ -315,70 +319,67 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             # don't collide with self
             if (particle == rand_particle):
                 continue
-            # don't check particles below this particle (no PBC in same tile)
+
             y_distance_btwn = abs(rand_particle[1] - particle[1])
             y_distance_pbc = (y_distance_btwn - Values.volume_length*
                             round(y_distance_btwn*Values.inv_length))
-            if (y_distance_pbc > 1.0 ):
+            # no collision
+            if (y_distance_pbc >= Values.grid_tile_height):
                 continue
-            if (particle[1] < rand_particle[1]):
-                print('y_dist_pbc', y_distance_pbc)
+            if ((y_distance_pbc < Values.grid_tile_height) and
+                 (rand_particle[1] > particle[1])):
                 continue
-            else:
-                y_distance_btwn = abs(rand_particle[1] - particle[1])
-                y_distance_pbc = (y_distance_btwn - Values.volume_length*
-                                round(y_distance_btwn*Values.inv_length))
-                
 
             x_distance_btwn = abs(rand_particle[0] - particle[0])
             x_distance_pbc = (x_distance_btwn - Values.volume_length*
                                 round(x_distance_btwn*Values.inv_length))
 
-            # if collisions exist, record them
-            if (x_distance_pbc < Values.diameter):
-                if (y_distance_pbc < Values.grid_tile_height):
-                    overlap_count += 1
-                    dy = sqrt(Values.diameter - x_distance_pbc**2)
-                    next_particle.append([sqrt(x_distance_pbc**2 +
-                                        y_distance_btwn**2), particle,
-                                        [tile.y//Values.grid_tile_height,
-                                        tile.x//Values.grid_tile_height],
-                                        abs(y_distance_pbc - dy)])
+            if (x_distance_pbc >= Values.diameter):
+                continue
 
-        #check neighbors for collisions
-        for i in neighbor_tiles:
-            # ith neighbor in the neighbor list
-            neighbor_tile = tile.neighbor_list[i]
-            neighbor = grid[neighbor_tile[0]][neighbor_tile[1]]
-            for particle in neighbor.particle_list:
-                #don't collide with self (one particle in two tiles)
-                if (particle == rand_particle):
-                    continue
-                x_distance_btwn = abs(rand_particle[0] - particle[0])
-                x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                                round(x_distance_btwn*Values.inv_length))
-                # dont check particles below (consider PBC)
-                if (particle[1] > rand_particle[1]):
+            overlap_count += 1
+            dy = sqrt(Values.diameter - x_distance_pbc**2)
+            next_particle.append([sqrt(x_distance_pbc**2 +
+                                y_distance_pbc**2), particle,
+                                [tile.y//Values.grid_tile_height,
+                                tile.x//Values.grid_tile_height],
+                                abs(y_distance_pbc - dy)])
+
+        if (overlap_count == 0):
+            #check neighbors for collisions
+            for i in neighbor_tiles:
+                # ith neighbor in the neighbor list
+                neighbor_tile = tile.neighbor_list[i]
+                neighbor = grid[neighbor_tile[0]][neighbor_tile[1]]
+                for particle in neighbor.particle_list:
+                    #don't collide with self (one particle in two tiles)
+                    if (particle == rand_particle):
+                        continue
+                    
                     y_distance_btwn = abs(rand_particle[1] - particle[1])
                     y_distance_pbc = (y_distance_btwn - Values.volume_length*
                                 round(y_distance_btwn*Values.inv_length))
 
-                elif ((particle[1] + Values.volume_length) > 
-                        (rand_particle[1])):
-                    y_distance_btwn = abs(rand_particle[1] -
-                                        (particle[1] + Values.volume_length))
-                    y_distance_pbc = (y_distance_btwn - Values.volume_length*
-                                round(y_distance_btwn*Values.inv_length))
+                    # no collision
+                    if (y_distance_pbc >= Values.grid_tile_height):
+                        continue
+                    if ((y_distance_pbc < Values.grid_tile_height) and
+                         (rand_particle[1] > particle[1])):
+                        continue
 
-                # if collisions exist, record them
-                if (x_distance_pbc < Values.diameter):
-                    if (y_distance_btwn < Values.grid_tile_height):
-                        overlap_count += 1
-                        dy = sqrt(Values.diameter - x_distance_pbc**2)
-                        next_particle.append([sqrt(x_distance_pbc**2 +
-                                            y_distance_pbc**2), particle,
-                                            tile.neighbor_list[i],
-                                            abs(y_distance_pbc - dy)])
+                    x_distance_btwn = abs(rand_particle[0] - particle[0])
+                    x_distance_pbc = (x_distance_btwn - Values.volume_length*
+                                    round(x_distance_btwn*Values.inv_length))
+                    if (x_distance_pbc >= Values.diameter):
+                        continue
+
+                    # if collisions exist, record them
+                    overlap_count += 1
+                    dy = sqrt(Values.diameter - x_distance_pbc**2)
+                    next_particle.append([sqrt(x_distance_pbc**2 +
+                                        y_distance_pbc**2), particle,
+                                        tile.neighbor_list[i],
+                                        abs(y_distance_pbc - dy)])
 
     elif (direction == 'DOWN'):
         '''Check collison down'''
