@@ -44,12 +44,9 @@ assert(test_grid[2][2].neighbor_list ==
 nparticles = 14
 volume_length = (nparticles / 0.5) 
 diameter = 1
-rx = [None] * nparticles
-ry = [None] * nparticles
 rxy = [[[None],[None]] for xy in range(0, nparticles)]
-define_list(nparticles, volume_length, diameter, rx, ry, rxy)
-assert(rxy[0][0] < rxy[1][0]) #first x is smaller than second x
-assert(rxy[0][1] < rxy[1][1]) #first y is smalller than second y
+define_list(nparticles, volume_length, diameter, rxy)
+assert(((rxy[0][0] - rxy[1][0])**2 + (rxy[0][1] - rxy[1][1])**2)**(0.5))
 #for i in rxy:
 #    print(i)
 

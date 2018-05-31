@@ -2,6 +2,8 @@
 TO DO
 ------
 Fix Movement/collision
+    problem seems to be with grids (i.e. (3,2) shouldn't be in [0,0])
+    something is weird about delta_y
 Set up histogram function
 set up printing function
 '''
@@ -17,7 +19,7 @@ import copy
 
 class Values:
     diameter = 1  # particle diameter (for hard sphere model)
-    ncycles = 200 # number of times a particle will be selceted and moved
+    ncycles = 1 # number of times a particle will be selceted and moved
     nparticles = 18 # number of particles
     # particle density - how close the particles will be at simulation start
     rho = 0.5 
@@ -49,14 +51,14 @@ class Grid_tile:
     def __init__(self, i, j):
         # This method builds a grid tile
 
-        self.neighbor_list = [[None, None] for i in range(0,8)] 
-        # down, up, left, right, up left, up right, down left, down right
-        # pre-built empty to optimise memory allocation
-        
         # x and y represent the row and column
         self.x = i #grid tile's x position at top left corner
         self.y = j #grid tile's y position at top left corner
-        #maybe better to define this as the center
+
+        self.neighbor_list = [[None, None] for index in range(0,8)] 
+        # down, up, left, right, up left, up right, down left, down right
+        # pre-built empty to optimise memory allocation
+        
 
         # create an empty list which will later be changed as the grid
         # is populated with particles
@@ -112,7 +114,7 @@ def main():
     print('\n\n')
     print("Start\t\t\tEnd")
     for i in range(0,len(start_rxy)):
-        print("{} \t {}".format(start_rxy[i], rxy[i]))
+        print("{} {} \t {}".format(i, start_rxy[i], rxy[i]))
 
     temp_list = [] 
     for i in range(0, len(rxy) - 1):
@@ -137,7 +139,7 @@ def build_grid(input_grid, grid_dim):
 
     for i in range(0, len(input_grid[0])):
        for j in range(0, len(input_grid[0])):
-           input_grid[i][j] = Grid_tile((j * grid_dim), (i * grid_dim))
+           input_grid[i][j] = Grid_tile((i * grid_dim), (j * grid_dim))
         #endfor
     #endfor
 
@@ -324,9 +326,9 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             y_distance_pbc = (y_distance_btwn - Values.volume_length*
                             round(y_distance_btwn*Values.inv_length))
             # no collision
-            if (y_distance_pbc >= Values.grid_tile_height):
+            if (y_distance_pbc > Values.grid_tile_height):
                 continue
-            if ((y_distance_pbc < Values.grid_tile_height) and
+            if ((y_distance_pbc <= Values.grid_tile_height) and
                  (rand_particle[1] > particle[1])):
                 continue
 
@@ -361,9 +363,9 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                                 round(y_distance_btwn*Values.inv_length))
 
                     # no collision
-                    if (y_distance_pbc >= Values.grid_tile_height):
+                    if (y_distance_pbc > Values.grid_tile_height):
                         continue
-                    if ((y_distance_pbc < Values.grid_tile_height) and
+                    if ((y_distance_pbc <= Values.grid_tile_height) and
                          (rand_particle[1] > particle[1])):
                         continue
 
@@ -376,6 +378,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                     # if collisions exist, record them
                     overlap_count += 1
                     dy = sqrt(Values.diameter - x_distance_pbc**2)
+                    print('dy: ', dy, 'y dist btwn: ', y_distance_btwn)
                     next_particle.append([sqrt(x_distance_pbc**2 +
                                         y_distance_pbc**2), particle,
                                         tile.neighbor_list[i],
@@ -592,6 +595,7 @@ def move(direction, rxy, grid, particle, tile, position):
     x_distance_btwn = None
     y_distance_btwn = None
     neighbor_tile = None
+    start_rxy = copy.deepcopy(rxy)
     if (Values.extra_print):
         print('\n')
         print("list{}: {} moving: {}".format([tile.x, tile.y], tile.particle_list, tile.particle_list[position]))
@@ -606,6 +610,17 @@ def move(direction, rxy, grid, particle, tile, position):
 #        for counter in range(11):
             if (Values.extra_print):
                 print("distance: ",distance)
+            print('\n\n')
+            print("Start\t\t\tEnd")
+            for i in range(0,len(start_rxy)):
+                print("{} {} \t {}".format(i, start_rxy[i], rxy[i]))
+
+            temp_list = [] 
+            for i in range(0, len(rxy) - 1):
+                for j in range(i + 1, len(rxy)):
+                    x_dist = abs(rxy[i][0] - rxy[j][0])
+                    y_dist = abs(rxy[i][1] - rxy[j][1])
+                    temp_list.append([sqrt(x_dist**2 + y_dist**2),i,j])
 
             # check for collisions
             if (Values.extra_print):
@@ -617,7 +632,7 @@ def move(direction, rxy, grid, particle, tile, position):
             if (overlap_count == 0):
 
                 if (Values.extra_print):
-                    print("No particle collition")
+                    print("No particle collision")
                 # remove particle from starting grid
                 temp = tile.particle_list.pop(position)
                 # update particle (moving up)
@@ -641,7 +656,7 @@ def move(direction, rxy, grid, particle, tile, position):
                 tile = destination
 
             # collision
-            # next_partcile should = [distance to nearest particle, particle,
+            # next_particle should = [distance to nearest particle, particle,
             #                           grid that particle is in]
 
             if (overlap_count > 0):
@@ -673,6 +688,7 @@ def move(direction, rxy, grid, particle, tile, position):
                 particle = particle_hit
                 position = index
                 tile = grid[neigh_x][neigh_y]
+
 
                 if (Values.pause):
                     input()
