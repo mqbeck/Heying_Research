@@ -222,8 +222,7 @@ def populate_grid_neighbors(input_grid):
                     [(i - 1) % grid_size, 0], #DL
                     [(i + 1) % grid_size, 0]] #DR
         #endelse
-        elif (i % grid_size == 0 and not(i // grid_size != 0 and
-                i // grid_size == (grid_size - 1))): #left column
+        elif (i % grid_size == 0): #left column
             input_grid[i % grid_size][i // grid_size].neighbor_list = [
                     [i % grid_size, (i // grid_size) + 1], #D
                     [i % grid_size, (i // grid_size) - 1], #U
