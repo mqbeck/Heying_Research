@@ -6,6 +6,7 @@ Fix Movement/collision
     something is weird about delta_y
 Set up histogram function
 set up printing function
+set up sacling grid tile
 '''
 
 from math import *
@@ -155,105 +156,106 @@ def populate_grid_neighbors(input_grid):
 
         if (i == 0): # first grid_tile
             input_grid[i][i].neighbor_list = [
-                    [grid_size - (grid_size - 1), 0], #down
-                    [grid_size - 1, 0], # up
-                    [0, grid_size - 1], # left
-                    [0, grid_size - (grid_size - 1)], #  right
+                    [0, grid_size - 1], # down
+                    [0, grid_size - (grid_size - 1)], # up
+                    [grid_size - (grid_size - 1), 0], #left
+                    [grid_size - 1, 0], # right
                     [grid_size - 1, grid_size - 1], #UpL
-                    [grid_size - 1, grid_size - (grid_size - 1)], #upR
-                    [grid_size - (grid_size - 1), grid_size - 1], #downL
+                    [grid_size - (grid_size - 1), grid_size - 1], #upR
+                    [grid_size - 1, grid_size - (grid_size - 1)], #downL
                     [grid_size - (grid_size - 1), grid_size - (grid_size - 1)]] #downR
         #endif
         elif (i == ((grid_size ** 2) - 1)): # last grid_tile
             input_grid[grid_size - 1][grid_size - 1].neighbor_list = [
-                    [0, grid_size - 1], #down
-                    [grid_size - 2, grid_size - 1], # up
-                    [grid_size - 1, grid_size - 2], # left
-                    [grid_size - 1, 0], #right
+                    [grid_size - 1, 0], #down
+                    [grid_size - 1, grid_size - 2], # up
+                    [grid_size - 2, grid_size - 1], # left
+                    [0, grid_size - 1], #right
                     [grid_size - 2, grid_size - 2], # upL
-                    [grid_size - 2, 0], #upR
-                    [0, grid_size - 2], # downL
+                    [0, grid_size - 2], # upR
+                    [grid_size - 2, 0], #downL
                     [0, 0]] # downR
         #endelse
         elif (i == (grid_size - 1)): # top right corner
             input_grid[0][i].neighbor_list = [
-                    [grid_size - (grid_size - 1), grid_size - 1], #D
-                    [grid_size - 1, grid_size - 1], #U
-                    [0, grid_size - 2], #L
+                    [grid_size - 1, grid_size - (grid_size - 1)], #d
+                    [grid_size - 1, grid_size - 1], #u
+                    [grid_size - 2, 0], #l
                     [0, 0], #R
-                    [grid_size - 1, grid_size - 2], #UL
-                    [grid_size - 1, 0], #UR
-                    [grid_size - (grid_size - 1), grid_size - 2], # DL
-                    [grid_size - (grid_size - 1), 0]] #DR
+                    [grid_size - 2, grid_size - 1], #ul
+                    [0, grid_size - 1], #uR
+                    [grid_size - 2, grid_size - (grid_size - 1)], #dL
+                    [0, grid_size - (grid_size - 1)]]  #dR
         #endelse
+        #continue checking 
         elif (i == ((grid_size ** 2) - grid_size)):# bottom left
             input_grid[grid_size - 1][0].neighbor_list = [
                     [0, 0], #D
-                    [grid_size - 2, 0], #U
+                    [0, grid_size - 2], #U
                     [grid_size - 1, grid_size - 1], #L
-                    [grid_size - 1, grid_size - (grid_size - 1)], #R
-                    [grid_size - (grid_size - 1), grid_size - 1], #UL
-                    [grid_size - 2, grid_size - (grid_size - 1)], #UR
-                    [0, grid_size - 1], #DL
-                    [0, grid_size - (grid_size - 1)]] #DR
+                    [grid_size - (grid_size - 1), grid_size - 1], #R
+                    [grid_size - 1, grid_size - 1], #UL
+                    [grid_size - (grid_size - 1), grid_size - 2], #UR
+                    [grid_size - 1, 0], #DL
+                    [grid_size - (grid_size - 1), 0]] #DR
         #endelse            
         elif ((i // grid_size) == 0 ): # top row
             input_grid[i // grid_size][i % grid_size].neighbor_list = [
-                    [grid_size - (grid_size - 1), i % grid_size], #D
-                    [grid_size - 1, i % grid_size], #U
-                    [0, (i - 1) % grid_size], #L
-                    [0, (i + 1) % grid_size], #R
-                    [grid_size - 1, (i - 1) % grid_size], #UL
-                    [grid_size - 1, (i + 1) % grid_size], #UR
-                    [grid_size - (grid_size - 1), (i - 1) % grid_size], #DL
-                    [grid_size - (grid_size - 1), (i + 1) % grid_size]] #DR
+                    [ i % grid_size, grid_size - (grid_size - 1)], #D
+                    [i % grid_size, grid_size - 1], #U
+                    [(i - 1) % grid_size, 0], #L
+                    [(i + 1) % grid_size, 0], #R
+                    [(i - 1) % grid_size, grid_size - 1], #UL
+                    [(i + 1) % grid_size, grid_size - 1], #UR
+                    [(i - 1) % grid_size, grid_size - (grid_size - 1)], #DL
+                    [(i + 1) % grid_size, grid_size - (grid_size - 1)]] #DR
         #endelse
 #        elif ((grid_size ** 2 - grid_size) < i < ((grid_size ** 2) - 2)): # bottom row
         elif ((i // grid_size) == (grid_size - 1)):
             input_grid[i // grid_size][i % grid_size].neighbor_list = [
-                    [0, i % grid_size], #D
-                    [grid_size - 2, i % grid_size], #U
-                    [grid_size - 1, (i - 1) % grid_size], #L
-                    [grid_size - 1, (i + 1) % grid_size], #R
-                    [grid_size - 2, (i - 1) % grid_size], #UL
-                    [grid_size - 2, (i + 1) % grid_size], #UR
-                    [0, (i - 1) % grid_size], #DL
-                    [0, (i + 1) % grid_size]] #DR
+                    [i % grid_size, 0], #D
+                    [i % grid_size, grid_size - 2], #U
+                    [(i - 1) % grid_size, grid_size - 1], #L
+                    [(i + 1) % grid_size, grid_size - 1], #R
+                    [(i - 1) % grid_size, grid_size - 2], #UL
+                    [(i + 1) % grid_size, grid_size - 2], #UR
+                    [(i - 1) % grid_size, 0], #DL
+                    [(i + 1) % grid_size, 0]] #DR
         #endelse
         elif (i % grid_size == 0 and not(i // grid_size != 0 and
                 i // grid_size == (grid_size - 1))): #left column
             input_grid[i // grid_size][i % grid_size].neighbor_list = [
-                    [(i // grid_size) + 1, i % grid_size], #D
-                    [(i // grid_size) - 1, i % grid_size], #U
-                    [i // grid_size, grid_size - 1], #L
-                    [i // grid_size, grid_size - (grid_size - 1)], #R
-                    [(i // grid_size) - 1, grid_size - 1], #UL
-                    [(i // grid_size) - 1, grid_size - (grid_size - 1)], #UR
-                    [(i // grid_size) + 1, grid_size - 1], #DL
-                    [(i // grid_size) + 1, grid_size - (grid_size - 1)]] #DR
+                    [i % grid_size, (i // grid_size) + 1], #D
+                    [i % grid_size, (i // grid_size) - 1], #U
+                    [grid_size - 1, i // grid_size], #L
+                    [grid_size - (grid_size - 1), i // grid_size], #R
+                    [grid_size - 1, (i // grid_size) - 1], #UL
+                    [grid_size - (grid_size - 1), (i // grid_size) - 1], #UR
+                    [grid_size - 1, (i // grid_size) + 1], #DL
+                    [grid_size - (grid_size - 1), (i // grid_size) + 1]] #DR
         #endelse
         elif (i % grid_size == (grid_size - 1) and not(i // grid_size != 0 and
                 i // grid_size == (grid_size - 1))): #right column
             input_grid[i // grid_size][i % grid_size].neighbor_list = [
-                    [(i // grid_size) + 1, i % grid_size], #D
-                    [(i // grid_size) - 1, i % grid_size], #U
-                    [i // grid_size, grid_size - 2], #L
-                    [i // grid_size, 0], #R
-                    [(i // grid_size) - 1, grid_size - 2], #UL
-                    [(i // grid_size) - 1, 0], #UR
-                    [(i // grid_size) + 1, grid_size - 2], #DL
-                    [(i // grid_size) + 1, 0]] #DR
+                    [i % grid_size, (i // grid_size) + 1], #D
+                    [i % grid_size, (i // grid_size) - 1], #U
+                    [grid_size - 2, i // grid_size], #L
+                    [0, i // grid_size], #R
+                    [grid_size - 2, (i // grid_size) - 1], #UL
+                    [0, (i // grid_size) - 1], #UR
+                    [grid_size - 2, (i // grid_size) + 1], #DL
+                    [0, (i // grid_size) + 1]] #DR
         #endelse
         else: # everything else
             input_grid[i // grid_size][i % grid_size].neighbor_list = [
-                    [(i // grid_size) + 1, i % grid_size], #D
+                    [i % grid_size, (i // grid_size) + 1], #D
                     [(i // grid_size) - 1, i % grid_size], #U
-                    [i // grid_size, (i - 1) % grid_size], #L
-                    [i // grid_size, (i + 1) % grid_size], #R
-                    [(i // grid_size) - 1, (i - 1) % grid_size], #UL
-                    [(i // grid_size) - 1, (i + 1) % grid_size], #UR
-                    [(i // grid_size) + 1, (i - 1) % grid_size], #DL
-                    [(i // grid_size) + 1, (i + 1) % grid_size]] #DR
+                    [(i - 1) % grid_size, i // grid_size], #L
+                    [(i + 1) % grid_size, i // grid_size], #R
+                    [(i - 1) % grid_size, (i // grid_size) - 1], #UL
+                    [(i + 1) % grid_size, (i // grid_size) - 1], #UR
+                    [(i - 1) % grid_size, (i // grid_size) + 1], #DL
+                    [(i + 1) % grid_size, (i // grid_size) + 1]] #DR
         #endless
     #endfor
 
