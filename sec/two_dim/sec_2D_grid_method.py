@@ -161,9 +161,9 @@ def populate_grid_neighbors(input_grid):
                     [grid_size - (grid_size - 1), 0], #left
                     [grid_size - 1, 0], # right
                     [grid_size - 1, grid_size - (grid_size - 1)], #upL
-                    [grid_size - (grid_size - 1), grid_size - (grid_size - 1)]] #upR
+                    [grid_size - (grid_size - 1), grid_size - (grid_size - 1)], #upR
                     [grid_size - 1, grid_size - 1], #downL
-                    [grid_size - (grid_size - 1), grid_size - 1], #downR
+                    [grid_size - (grid_size - 1), grid_size - 1]] #downR
         #endif
         elif (i == ((grid_size ** 2) - 1)): # last grid_tile
             input_grid[grid_size - 1][grid_size - 1].neighbor_list = [
@@ -172,9 +172,9 @@ def populate_grid_neighbors(input_grid):
                     [grid_size - 2, grid_size - 1], # left
                     [0, grid_size - 1], #right
                     [grid_size - 2, 0], #upL
-                    [0, 0]] # upR
+                    [0, 0], # upR
                     [grid_size - 2, grid_size - 2], # downL
-                    [0, grid_size - 2], # downR
+                    [0, grid_size - 2]] # downR
         #endelse
         elif (i == (grid_size - 1)): # top right corner
             input_grid[i][0].neighbor_list = [
@@ -183,9 +183,9 @@ def populate_grid_neighbors(input_grid):
                     [grid_size - 2, 0], #l
                     [0, 0], #R
                     [grid_size - 2, grid_size - (grid_size - 1)], #uL
-                    [0, grid_size - (grid_size - 1)]]  #uR
+                    [0, grid_size - (grid_size - 1)],  #uR
                     [grid_size - 2, grid_size - 1], #dl
-                    [0, grid_size - 1], #dR
+                    [0, grid_size - 1]] #dR
         #endelse
         #continue checking 
         elif (i == ((grid_size ** 2) - grid_size)):# bottom left
@@ -195,9 +195,9 @@ def populate_grid_neighbors(input_grid):
                     [grid_size - 1, grid_size - 1], #L
                     [grid_size - (grid_size - 1), grid_size - 1], #R
                     [grid_size - 1, 0], #uL
-                    [grid_size - (grid_size - 1), 0]] #uR
+                    [grid_size - (grid_size - 1), 0], #uR
                     [grid_size - 1, grid_size - 1], #dL
-                    [grid_size - (grid_size - 1), grid_size - 2], #dR
+                    [grid_size - (grid_size - 1), grid_size - 2]] #dR
         #endelse            
         elif ((i // grid_size) == 0 ): # top row
             input_grid[i % grid_size][i // grid_size].neighbor_list = [
@@ -206,9 +206,9 @@ def populate_grid_neighbors(input_grid):
                     [(i - 1) % grid_size, 0], #L
                     [(i + 1) % grid_size, 0], #R
                     [(i - 1) % grid_size, grid_size - (grid_size - 1)], #uL
-                    [(i + 1) % grid_size, grid_size - (grid_size - 1)]] #uR
+                    [(i + 1) % grid_size, grid_size - (grid_size - 1)], #uR
                     [(i - 1) % grid_size, grid_size - 1], #dL
-                    [(i + 1) % grid_size, grid_size - 1], #dR
+                    [(i + 1) % grid_size, grid_size - 1]] #dR
         #endelse
 #        elif ((grid_size ** 2 - grid_size) < i < ((grid_size ** 2) - 2)): # bottom row
         elif ((i // grid_size) == (grid_size - 1)):
@@ -218,9 +218,9 @@ def populate_grid_neighbors(input_grid):
                     [(i - 1) % grid_size, grid_size - 1], #L
                     [(i + 1) % grid_size, grid_size - 1], #R
                     [(i - 1) % grid_size, 0], #uL
-                    [(i + 1) % grid_size, 0]] #uR
+                    [(i + 1) % grid_size, 0], #uR
                     [(i - 1) % grid_size, grid_size - 2], #dL
-                    [(i + 1) % grid_size, grid_size - 2], #dR
+                    [(i + 1) % grid_size, grid_size - 2]] #dR
         #endelse
         elif (i % grid_size == 0): #left column
             input_grid[i % grid_size][i // grid_size].neighbor_list = [
@@ -229,9 +229,9 @@ def populate_grid_neighbors(input_grid):
                     [grid_size - 1, i // grid_size], #L
                     [grid_size - (grid_size - 1), i // grid_size], #R
                     [grid_size - 1, (i // grid_size) + 1], #uL
-                    [grid_size - (grid_size - 1), (i // grid_size) + 1]] #uR
+                    [grid_size - (grid_size - 1), (i // grid_size) + 1], #uR
                     [grid_size - 1, (i // grid_size) - 1], #dL
-                    [grid_size - (grid_size - 1), (i // grid_size) - 1], #dR
+                    [grid_size - (grid_size - 1), (i // grid_size) - 1]] #dR
         #endelse
         elif (i % grid_size == (grid_size - 1)): #right column
             input_grid[i % grid_size][i // grid_size].neighbor_list = [
@@ -240,9 +240,9 @@ def populate_grid_neighbors(input_grid):
                     [grid_size - 2, i // grid_size], #L
                     [0, i // grid_size], #R
                     [grid_size - 2, (i // grid_size) + 1], #uL
-                    [0, (i // grid_size) + 1]] #uR
+                    [0, (i // grid_size) + 1], #uR
                     [grid_size - 2, (i // grid_size) - 1], #dL
-                    [0, (i // grid_size) - 1], #dR
+                    [0, (i // grid_size) - 1]] #dR
         #endelse
         else: # everything else
             input_grid[i % grid_size][i // grid_size].neighbor_list = [
@@ -251,9 +251,9 @@ def populate_grid_neighbors(input_grid):
                     [(i - 1) % grid_size, i // grid_size], #L
                     [(i + 1) % grid_size, i // grid_size], #R
                     [(i - 1) % grid_size, (i // grid_size) + 1], #uL
-                    [(i + 1) % grid_size, (i // grid_size) + 1]] #uR
+                    [(i + 1) % grid_size, (i // grid_size) + 1], #uR
                     [(i - 1) % grid_size, (i // grid_size) - 1], #dL
-                    [(i + 1) % grid_size, (i // grid_size) - 1], #dR
+                    [(i + 1) % grid_size, (i // grid_size) - 1]] #dR
         #endless
     #endfor
 
