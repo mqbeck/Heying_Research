@@ -1,0 +1,5 @@
+alias bashrc=" vim ~/.bashrc_aliases && source ~/.bashrc_aliases"
+alias python=python3
+alias coverage="python ~cesiu/www/csc202/coverage"
+# update for each class
+alias cpe="cd ~/cpe/cpe202"
