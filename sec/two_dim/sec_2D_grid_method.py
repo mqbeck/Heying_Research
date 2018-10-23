@@ -154,18 +154,18 @@ def populate_grid_neighbors(input_grid):
         # indices start at 0 and end at n-1
         # integer division and remainder to interate though rows and columns: 
 
-        if (i == 0): # first grid_tile
+        if (i == 0): # first grid_tile, bottom left
             input_grid[i][i].neighbor_list = [
                     [0, grid_size - 1], # down
                     [0, grid_size - (grid_size - 1)], # up
-                    [grid_size - (grid_size - 1), 0], #left
-                    [grid_size - 1, 0], # right
-                    [grid_size - 1, grid_size - (grid_size - 1)], #upL
+                    [grid_size - 1, 0], # left
+                    [grid_size - (grid_size - 1), 0], #right
+                    [grid_size - (grid_size - 1), grid_size - 1], #upL
                     [grid_size - (grid_size - 1), grid_size - (grid_size - 1)], #upR
                     [grid_size - 1, grid_size - 1], #downL
-                    [grid_size - (grid_size - 1), grid_size - 1]] #downR
+                    [grid_size - 1, grid_size - (grid_size - 1)]] #downR
         #endif
-        elif (i == ((grid_size ** 2) - 1)): # last grid_tile
+        elif (i == ((grid_size ** 2) - 1)): # last grid_tile, top right
             input_grid[grid_size - 1][grid_size - 1].neighbor_list = [
                     [grid_size - 1, grid_size - 2], # down
                     [grid_size - 1, 0], #up
@@ -176,7 +176,7 @@ def populate_grid_neighbors(input_grid):
                     [grid_size - 2, grid_size - 2], # downL
                     [0, grid_size - 2]] # downR
         #endelse
-        elif (i == (grid_size - 1)): # top right corner
+        elif (i == (grid_size - 1)): # bottom right
             input_grid[i][0].neighbor_list = [
                     [grid_size - 1, grid_size - 1], #down
                     [grid_size - 1, grid_size - (grid_size - 1)], #up
@@ -187,8 +187,7 @@ def populate_grid_neighbors(input_grid):
                     [grid_size - 2, grid_size - 1], #dl
                     [0, grid_size - 1]] #dR
         #endelse
-        #continue checking 
-        elif (i == ((grid_size ** 2) - grid_size)):# bottom left
+        elif (i == ((grid_size ** 2) - grid_size)):# top left
             input_grid[0][grid_size - 1].neighbor_list = [
                     [0, grid_size - 2], #down
                     [0, 0], #up
@@ -196,10 +195,10 @@ def populate_grid_neighbors(input_grid):
                     [grid_size - (grid_size - 1), grid_size - 1], #R
                     [grid_size - 1, 0], #uL
                     [grid_size - (grid_size - 1), 0], #uR
-                    [grid_size - 1, grid_size - 1], #dL
+                    [grid_size - 1, grid_size - 2], #dL
                     [grid_size - (grid_size - 1), grid_size - 2]] #dR
         #endelse            
-        elif ((i // grid_size) == 0 ): # top row
+        elif ((i // grid_size) == 0 ): # bottom row
             input_grid[i % grid_size][i // grid_size].neighbor_list = [
                     [i % grid_size, grid_size - 1], #down
                     [ i % grid_size, grid_size - (grid_size - 1)], #up
@@ -210,7 +209,7 @@ def populate_grid_neighbors(input_grid):
                     [(i - 1) % grid_size, grid_size - 1], #dL
                     [(i + 1) % grid_size, grid_size - 1]] #dR
         #endelse
-#        elif ((grid_size ** 2 - grid_size) < i < ((grid_size ** 2) - 2)): # bottom row
+#        elif ((grid_size ** 2 - grid_size) < i < ((grid_size ** 2) - 2)): # top row
         elif ((i // grid_size) == (grid_size - 1)):
             input_grid[i % grid_size][i // grid_size].neighbor_list = [
                     [i % grid_size, grid_size - 2], #up
@@ -226,8 +225,8 @@ def populate_grid_neighbors(input_grid):
             input_grid[i % grid_size][i // grid_size].neighbor_list = [
                     [i % grid_size, (i // grid_size) - 1], #down
                     [i % grid_size, (i // grid_size) + 1], #up
-                    [grid_size - 1, i // grid_size], #L
-                    [grid_size - (grid_size - 1), i // grid_size], #R
+                    [grid_size - (grid_size - 1), i // grid_size], #L
+                    [grid_size - 1, i // grid_size], #R
                     [grid_size - 1, (i // grid_size) + 1], #uL
                     [grid_size - (grid_size - 1), (i // grid_size) + 1], #uR
                     [grid_size - 1, (i // grid_size) - 1], #dL
@@ -246,7 +245,7 @@ def populate_grid_neighbors(input_grid):
         #endelse
         else: # everything else
             input_grid[i % grid_size][i // grid_size].neighbor_list = [
-                    [(i // grid_size) - 1, i % grid_size], #down
+                    [(i % grid_size), (i // grid_size) - 1], #down
                     [i % grid_size, (i // grid_size) + 1], #up
                     [(i - 1) % grid_size, i // grid_size], #L
                     [(i + 1) % grid_size, i // grid_size], #R
@@ -323,6 +322,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             if (particle == rand_particle):
                 continue
 
+            #pbc stands for periodic boundary conditions
             y_distance_btwn = abs(rand_particle[1] - particle[1])
             y_distance_pbc = (y_distance_btwn - Values.volume_length*
                             round(y_distance_btwn*Values.inv_length))
