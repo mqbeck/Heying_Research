@@ -7,6 +7,8 @@ Fix Movement/collision
 Set up histogram function
 set up printing function
 set up sacling grid tile
+    scale particles down rather than scaling grid up -keep grids 1x1
+
 '''
 
 from math import *
@@ -19,7 +21,7 @@ import copy
 #import numpy as np
 
 class Values:
-    diameter = 1  # particle diameter (for hard sphere model)
+    diameter = 0.5  # particle diameter (for hard sphere model)
     ncycles = 1 # number of times a particle will be selceted and moved
     nparticles = 18 # number of particles
     # particle density - how close the particles will be at simulation start
@@ -30,7 +32,7 @@ class Values:
     length = nparticles ** 0.5 # length the particles will be moved per cycle
     n_root = ceil(sqrt(nparticles)) 
     # set the height of the grid_tils relative to the particles diameter
-    grid_tile_height = (2 * diameter) 
+    grid_tile_height = 1 #(2 * diameter) 
     #particle-particle distances to be sorted and counted, per cycle
     distances = [] 
     #sorted distance, ultimately normalized (summed to one)
@@ -53,6 +55,9 @@ class Grid_tile:
         # This method builds a grid tile
 
         # x and y represent the row and column
+        # note, the x and y are used to categorize particles as follows:
+        #  a tile contains a  particle if tile. x -1 < particle.x <= tile.x
+        #  and tile.y - 1 < particle.y <= particle.y 
         self.x = i #grid tile's x position at top left corner
         self.y = j #grid tile's y position at top left corner
 
@@ -137,6 +142,7 @@ def build_grid(input_grid, grid_dim):
     Created a grid to hold grid_tiles
     Each tile has height and width equal to Values.grid_tile_height
     """
+    # need to update this for scaling particles instead of tiles
 
     for i in range(0, len(input_grid[0])):
        for j in range(0, len(input_grid[0])):
@@ -267,10 +273,15 @@ def define_list(nparticles, volume_length, diameter, rxy):
     
     for i in range(0, nparticles):
         rxy[i] = [i // (Values.volume_length - 1),
-                    i % floor(Values.volume_length - 1)]
+                    float(i % floor(Values.volume_length - 1))]
     #enddo    
 
 def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension) 
+    '''Assigns particles to the grid tile. A particle belongs to the grid for
+    which the particle x and y are greater than the tile x and y but less than
+    the tile (x+1) and (y+1)'''
+
+    # This will need to be updated to reflect scaling the spheres instead
     for i in range(0, len(rxy)):
         x = floor(rxy[i][0] / Values.grid_tile_height)
         y = floor(rxy[i][1] / Values.grid_tile_height)
@@ -303,7 +314,7 @@ def select_particle_and_tile(grid):
     return rand_particle,the_chosen_one, random_number
 
 def check_for_collisions(direction, grid, rand_particle, tile):
-    print(tile, tile.neighbor_list)
+    print("tile: "tile, "neighbor list: ", tile.neighbor_list)
     x_distance_btwn = 0
     y_distance_btwn = 0
     overlap_count = 0
