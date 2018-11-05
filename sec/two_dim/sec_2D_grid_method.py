@@ -4,10 +4,23 @@ TO DO
 Fix Movement/collision
     problem seems to be with grids (i.e. (3,2) shouldn't be in [0,0])
     something is weird about delta_y
-Set up histogram function
-set up printing function
-set up sacling grid tile
-    scale particles down rather than scaling grid up -keep grids 1x1
+        maybe Dr. Choboter's suggestion of dy missing a power is realated
+    grid seems to be rotated (i.e. I mixed up x and y... again)
+        seems I inverted my reference... again. Found a bug anyways
+    collision seems to be missing adding collsions for non PBC 
+        i.e. only PBC collisions are recorded
+Things that might help debugging`
+    set up printing function
+After fix
+    Set up histogram function
+    set up sacling grid tile
+        scale particles down rather than scaling grid up -keep grids 1x1
+    I changed the collision function to not use the Values class, this will
+        will need to be rememdied 
+
+Other thoughts
+    take ceil(volumee_length) so that it is an integer. determine the number of
+        grid tiles needed this way (it might already be this way - check)
 
 '''
 
@@ -21,7 +34,7 @@ import copy
 #import numpy as np
 
 class Values:
-    diameter = 0.5  # particle diameter (for hard sphere model)
+    diameter = 1  # particle diameter (for hard sphere model)
     ncycles = 1 # number of times a particle will be selceted and moved
     nparticles = 18 # number of particles
     # particle density - how close the particles will be at simulation start
@@ -72,7 +85,7 @@ class Grid_tile:
 
     def __repr__(self):
         # This method tells python how to represent a tile
-        return '[{},{}]'.format(self.x, self.y)
+        return '[{},{}],'.format(self.x, self.y)
 
 def main():
     '''One function to call them all'''
@@ -136,10 +149,10 @@ def main():
 
 #    print(rxy) # print final, sorted list to terminal for quick review without opening file
 
-def build_grid(input_grid, grid_dim): 
+def build_grid(input_grid, grid_dim = 1): 
     """
     O(n^2)
-    Created a grid to hold grid_tiles
+    Creates a grid to hold grid_tiles
     Each tile has height and width equal to Values.grid_tile_height
     """
     # need to update this for scaling particles instead of tiles
@@ -166,7 +179,7 @@ def populate_grid_neighbors(input_grid):
                     [0, grid_size - (grid_size - 1)], # up
                     [grid_size - 1, 0], # left
                     [grid_size - (grid_size - 1), 0], #right
-                    [grid_size - (grid_size - 1), grid_size - 1], #upL
+                    [grid_size - 1, grid_size - (grid_size - 1)], #upL
                     [grid_size - (grid_size - 1), grid_size - (grid_size - 1)], #upR
                     [grid_size - 1, grid_size - 1], #downL
                     [grid_size - 1, grid_size - (grid_size - 1)]] #downR
@@ -231,8 +244,8 @@ def populate_grid_neighbors(input_grid):
             input_grid[i % grid_size][i // grid_size].neighbor_list = [
                     [i % grid_size, (i // grid_size) - 1], #down
                     [i % grid_size, (i // grid_size) + 1], #up
-                    [grid_size - (grid_size - 1), i // grid_size], #L
-                    [grid_size - 1, i // grid_size], #R
+                    [grid_size - 1, i // grid_size], #L
+                    [grid_size - (grid_size - 1), i // grid_size], #R
                     [grid_size - 1, (i // grid_size) + 1], #uL
                     [grid_size - (grid_size - 1), (i // grid_size) + 1], #uR
                     [grid_size - 1, (i // grid_size) - 1], #dL
@@ -272,21 +285,40 @@ def define_list(nparticles, volume_length, diameter, rxy):
     '''
     
     for i in range(0, nparticles):
-        rxy[i] = [i // (Values.volume_length - 1),
-                    float(i % floor(Values.volume_length - 1))]
+        rxy[i] = [float(i % floor(volume_length - 1)), 
+                    i // (volume_length - 1)]
+
     #enddo    
 
 def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension) 
     '''Assigns particles to the grid tile. A particle belongs to the grid for
-    which the particle x and y are greater than the tile x and y but less than
-    the tile (x+1) and (y+1)'''
+    which the particle x and y are greater than or equal to the tile x and y 
+    but less than the tile (x+1) and (y+1)'''
 
     # This will need to be updated to reflect scaling the spheres instead
     for i in range(0, len(rxy)):
         x = floor(rxy[i][0] / Values.grid_tile_height)
         y = floor(rxy[i][1] / Values.grid_tile_height)
         grid[x][y].particle_list.append(rxy[i])
-        
+
+def print_particles_in_grid(grid, grid_labels = True):
+    """Prints particles in each grid tile in a grid orientation. Origin is in
+    bottom left. Prints grid labels by deault and prints and empty grid as 
+    'empty'. Output is not (yet) evenly spaced."""
+
+    for j in range(len(grid[0])-1, -1, -1):
+        for i in range(0, len(grid[0])):
+            if (grid_labels):
+                print('|    ',grid[i][j],end ="    | ")
+        print()
+        for i in range(0, len(grid[0])):
+            if (len(grid[i][j].particle_list) == 0):
+                print('|    Empty', end ='    | ')
+            else:
+                print('| ',grid[i][j].particle_list, end =' | ')
+        print()
+        print("--------------------------------")
+
 def single_event_chain(rxy, grid):
     for i in range(0, Values.ncycles):
         particle, tile, position = select_particle_and_tile(grid)
@@ -298,7 +330,10 @@ def single_event_chain(rxy, grid):
             if (i%10 == 0):
                 print("cycle: ",i)
         
-def select_particle_and_tile(grid):
+def select_particle_and_tile(grid, override = False, override_num = 0):
+    if (override):
+        # override for debugging and testing purposes to avoid RNG
+        return grid[0][override_num].particle_list[0], grid[0][override_num], 0
     while (True):
         #choose a random grid tile from 2D grid, grid[row][column]
         the_chosen_one = random.choice(random.choice(grid))
@@ -313,8 +348,9 @@ def select_particle_and_tile(grid):
     # returns a particle, a tile, and a position in the list
     return rand_particle,the_chosen_one, random_number
 
-def check_for_collisions(direction, grid, rand_particle, tile):
-    print("tile: "tile, "neighbor list: ", tile.neighbor_list)
+def check_for_collisions(direction, grid, rand_particle, tile, volume_length, inv_length):
+    if (Values.extra_print):
+        print("tile: ", tile, "neighbor list: ", tile.neighbor_list)
     x_distance_btwn = 0
     y_distance_btwn = 0
     overlap_count = 0
@@ -327,7 +363,8 @@ def check_for_collisions(direction, grid, rand_particle, tile):
         # up, left, right, up-left, up-right
         neighbor_tiles = [1, 2, 3, 4, 5]
 
-        #check self for collisions
+        # check self for collisions (in the case of multiple particles fitting
+        # in a single grid
         for particle in tile.particle_list:
             # don't collide with self
             if (particle == rand_particle):
@@ -335,29 +372,39 @@ def check_for_collisions(direction, grid, rand_particle, tile):
 
             #pbc stands for periodic boundary conditions
             y_distance_btwn = abs(rand_particle[1] - particle[1])
-            y_distance_pbc = (y_distance_btwn - Values.volume_length*
-                            round(y_distance_btwn*Values.inv_length))
-            # no collision
+            # the rounding forces either a 0 or 1
+            y_distance_pbc = (y_distance_btwn - volume_length*
+                            round(y_distance_btwn*inv_length))
+
+            # no collision: the particle are farther apart than the distance
+            # being moved
             if (y_distance_pbc > Values.grid_tile_height):
                 continue
+
+            # no collision: the particles are within striking distance but
+            # the moving particle is moving away from the stationary particle
             if ((y_distance_pbc <= Values.grid_tile_height) and
                  (rand_particle[1] > particle[1])):
                 continue
 
+            # particles are within y striking distance: check x distances
             x_distance_btwn = abs(rand_particle[0] - particle[0])
-            x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                                round(x_distance_btwn*Values.inv_length))
+            x_distance_pbc = (x_distance_btwn - volume_length*
+                                round(x_distance_btwn*inv_length))
 
+            # no collision: radius + radius = diameter
+            # the x distance between is greater than the diameter
             if (x_distance_pbc >= Values.diameter):
                 continue
 
+            # collision!
             overlap_count += 1
-            dy = sqrt(Values.diameter - x_distance_pbc**2)
+            dy = sqrt(abs(Values.diameter**2 - x_distance_pbc**2))
             next_particle.append([sqrt(x_distance_pbc**2 +
                                 y_distance_pbc**2), particle,
                                 [tile.y//Values.grid_tile_height,
                                 tile.x//Values.grid_tile_height],
-                                abs(y_distance_pbc - dy)])
+                                abs(abs(y_distance_pbc) - dy)])
 
         if (overlap_count == 0):
             #check neighbors for collisions
@@ -371,30 +418,30 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                         continue
                     
                     y_distance_btwn = abs(rand_particle[1] - particle[1])
-                    y_distance_pbc = (y_distance_btwn - Values.volume_length*
-                                round(y_distance_btwn*Values.inv_length))
+                    y_distance_pbc = (y_distance_btwn - volume_length*
+                                round(y_distance_btwn*inv_length))
 
                     # no collision
                     if (y_distance_pbc > Values.grid_tile_height):
                         continue
                     if ((y_distance_pbc <= Values.grid_tile_height) and
-                         (rand_particle[1] > particle[1])):
-                        continue
+                         (rand_particle[1] > particle[1])):# and (y_distance_pbc >  0):
+                        #continue
+                        pass
 
                     x_distance_btwn = abs(rand_particle[0] - particle[0])
-                    x_distance_pbc = (x_distance_btwn - Values.volume_length*
-                                    round(x_distance_btwn*Values.inv_length))
+                    x_distance_pbc = (x_distance_btwn - volume_length*
+                                    round(x_distance_btwn*inv_length))
                     if (x_distance_pbc >= Values.diameter):
                         continue
 
                     # if collisions exist, record them
                     overlap_count += 1
-                    dy = sqrt(Values.diameter - x_distance_pbc**2)
-                    print('dy: ', dy, 'y dist btwn: ', y_distance_btwn)
+                    dy = sqrt(abs(Values.diameter**2 - x_distance_pbc**2))
                     next_particle.append([sqrt(x_distance_pbc**2 +
                                         y_distance_pbc**2), particle,
                                         tile.neighbor_list[i],
-                                        abs(y_distance_pbc - dy)])
+                                        abs(abs(y_distance_pbc) - dy)])
 
     elif (direction == 'DOWN'):
         '''Check collison down'''
@@ -423,7 +470,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             if (x_distance_pbc < Values.diameter):
                 if (y_distance_pbc < Values.grid_tile_height):
                     overlap_count += 1
-                    dy = sqrt(Values.diameter - x_distance_pbc**2)
+                    dy = sqrt(Values.diameter**2 - x_distance_pbc**2)
                     next_particle.append([sqrt(x_distance_pbc**2 +
                                         y_distance_pbc**2), particle,
                                         [tile.y//Values.grid_tile_height,
@@ -459,7 +506,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                 if (x_distance_btwn < Values.diameter):
                     if (y_distance_pbc < Values.grid_tile_height):
                         overlap_count += 1
-                        dy = sqrt(Values.diameter - x_distance_btwn**2)
+                        dy = sqrt(Values.diameter**2 - x_distance_btwn**2)
                         next_particle.append([sqrt(x_distance_btwn**2 +
                                             y_distance_pbc**2), particle,
                                             tile.neighbor_list[i],
@@ -488,7 +535,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             if (y_distance_btwn < Values.diameter):
                 if (x_distance_pbc < Values.grid_tile_height):
                     overlap_count += 1
-                    dx = sqrt(Values.diameter - y_distance_btwn**2)
+                    dx = sqrt(Values.diameter**2 - y_distance_btwn**2)
                     next_particle.append([sqrt(x_distance_pbc**2 +
                                         y_distance_btwn**2), particle,
                                         [tile.y//Values.grid_tile_height,
@@ -524,7 +571,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                 if (y_distance_btwn < Values.diameter):
                     if (x_distance_btwn < Values.grid_tile_height):
                         overlap_count += 1
-                        dx = sqrt(Values.diameter - y_distance_btwn**2)
+                        dx = sqrt(Values.diameter**2 - y_distance_btwn**2)
                         next_particle.append([sqrt(x_distance_pbc**2 +
                                             y_distance_btwn**2), particle,
                                             tile.neighbor_list[i],
@@ -553,7 +600,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
             if (y_distance_btwn < Values.diameter):
                 if (x_distance_btwn < Values.grid_tile_height):
                     overlap_count += 1
-                    dx = sqrt(Values.diameter - y_distance_btwn**2)
+                    dx = sqrt(Values.diameter**2 - y_distance_btwn**2)
                     next_particle.append([sqrt(x_distance_pbc**2 +
                                         y_distance_btwn**2), particle,
                                         [tile.y//Values.grid_tile_height,
@@ -589,7 +636,7 @@ def check_for_collisions(direction, grid, rand_particle, tile):
                 if (y_distance_btwn < Values.diameter):
                     if (x_distance_btwn < Values.grid_tile_height):
                         overlap_count += 1
-                        dx = sqrt(Values.diameter - y_distance_btwn**2)
+                        dx = sqrt(Values.diameter**2 - y_distance_btwn**2)
                         next_particle.append([sqrt(x_distance_pbc**2 +
                                             y_distance_btwn**2), particle,
                                             tile.neighbor_list[i],
@@ -602,6 +649,8 @@ def check_for_collisions(direction, grid, rand_particle, tile):
 
 def move(direction, rxy, grid, particle, tile, position):
     '''Legacy Comment'''
+    print("pre move")
+    print_particles_in_grid(grid, grid_labels = True)
     #Rather than adding up, I decided to subtract - am I pessimistic?
     distance = Values.length
     x_distance_btwn = None
@@ -638,7 +687,8 @@ def move(direction, rxy, grid, particle, tile, position):
             if (Values.extra_print):
                 print('in overlap check')
             overlap_count, next_particle = check_for_collisions(
-                direction, grid, particle, tile)
+                direction, grid, particle, tile, Values.volume_length,
+                Values.inv_length)
 
             # no collisions
             if (overlap_count == 0):
@@ -666,6 +716,9 @@ def move(direction, rxy, grid, particle, tile, position):
                 particle = destination.particle_list[-1]
                 position = len(destination.particle_list) - 1
                 tile = destination
+
+                print("post move-no collision")
+                print_particles_in_grid(grid, grid_labels = True)
 
             # collision
             # next_particle should = [distance to nearest particle, particle,
@@ -700,6 +753,9 @@ def move(direction, rxy, grid, particle, tile, position):
                 particle = particle_hit
                 position = index
                 tile = grid[neigh_x][neigh_y]
+
+                print("post move-collision")
+                print_particles_in_grid(grid, grid_labels = True)
 
 
                 if (Values.pause):
