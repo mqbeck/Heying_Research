@@ -59,9 +59,9 @@ class TestGridMethod(unittest.TestCase):
 
         # neighbor list order: down, up, left, right, up left, up right, down left, down right
         self.assertEqual(test_grid[0][0].neighbor_list,
-                            [[0,2],[0,1],[2,0],[1,0],[1,2],[1,1],[2,2],[2,1]])
+                            [[0,2],[0,1],[2,0],[1,0],[2,1],[1,1],[2,2],[2,1]])
         self.assertEqual(test_grid[0][1].neighbor_list,
-                            [[0,0],[0,2],[1,1],[2,1],[2,2],[1,2],[2,0],[1,0]])
+                            [[0,0],[0,2],[2,1],[1,1],[2,2],[1,2],[2,0],[1,0]])
         self.assertEqual(test_grid[0][2].neighbor_list,
                             [[0,1],[0,0],[2,2],[1,2],[2,0],[1,0],[2,1],[1,1]])
         self.assertEqual(test_grid[1][0].neighbor_list,
