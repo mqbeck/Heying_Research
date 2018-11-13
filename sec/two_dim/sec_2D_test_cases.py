@@ -191,7 +191,7 @@ class TestGridMethod(unittest.TestCase):
         collisions in its own tile and if none are found checks the neighbors
         in the direction traveled'''
 
-        #building a four dimentional grid
+        #building a four by four grid
         grid = [[None, None, None, None],
                 [None, None, None, None],
                 [None, None, None, None],
@@ -248,7 +248,7 @@ class TestGridMethod(unittest.TestCase):
         collisions in its own tile and if none are found checks the neighbors
         in the direction traveled'''
 
-        #building a four dimentional grid
+        #building a four by four grid
         grid = [[None, None, None, None],
                 [None, None, None, None],
                 [None, None, None, None],
@@ -298,47 +298,80 @@ class TestGridMethod(unittest.TestCase):
         self.assertEqual(overlap_count, 1)
         self.assertNotEqual(overlapping_particles, [[-9.0,[-9.0,-9.0]]])
 
-    def test_(self):
-        pass 
+    def test_check_for_collisions_large_grid_special_case(self):
+        '''verifies that the check_for_collisions function detects potentional 
+        overlap and records them for use in the move function. it first checks
+        collisions in its own tile and if none are found checks the neighbors
+        in the direction traveled'''
+
+        #building a four by four dimentional grid
+        grid = [[None, None, None, None],
+                [None, None, None, None],
+                [None, None, None, None],
+                [None, None, None, None]]
+
+        build_grid(grid)
+        populate_grid_neighbors(grid)
+
+        # collision path
+        grid[0][0].particle_list.append([0,0])
+        grid[0][1].particle_list.append([0,1])
+        grid[0][2].particle_list.append([0,2])
+        grid[1][0].particle_list.append([1,0])
+        grid[1][1].particle_list.append([1,1])
+        grid[1][2].particle_list.append([1,2])
+        grid[1][3].particle_list.append([1,3])
+        grid[2][0].particle_list.append([2,0])
+        grid[2][1].particle_list.append([2,1])
+        grid[2][2].particle_list.append([2,2])
+        grid[3][0].particle_list.append([3,0])
+        grid[3][1].particle_list.append([3,1])
+        grid[3][2].particle_list.append([3,2])
+
+#        print_particles_in_grid(grid)
+
+        # select particle at origin and check for collision
+        chosen_particle, chosen_tile, position = select_particle_and_tile(grid, True, 0)
+        overlap_count, overlapping_particles = check_for_collisions('UP', grid,
+                                                chosen_particle, chosen_tile,
+                                                4, 0.25)
+
+#        print(chosen_particle, chosen_tile, position)
+        # one collision
+        self.assertEqual(overlap_count, 1)
+        self.assertNotEqual(overlapping_particles, [[-9.0,[-9.0,-9.0]]])
+
+    def test_move(self):
+        '''Verifies that the move function calls the collision function and 
+        acts on the information provided. if a collision is found then it moves
+        a particle until collision. if no collision then it moves one grid tile
         '''
-        # particles constructed as they are in the main program using variables
-        nparticles = 3
-        volume_length = 6**(0.5)
-        diameter = 1
-        rxy = [[None, None] for xy in range(0, nparticles)]
-        define_list(nparticles, volume_length, diameter, rxy)
-#        print('rxy; ', rxy)
 
-        test_grid = [[None for column in range(0,3)] for row in range(0,3)] 
-        build_grid(test_grid, 1)
+        direction = "UP"
+        rxy  = [[0.0, 2], [0, 3]]
+        grid = [[None, None, None, None],
+                [None, None, None, None],
+                [None, None, None, None],
+                [None, None, None, None]]
 
-        assign_particles_to_grid(rxy, test_grid)
-#        print_particles_in_grid(test_grid)
+        build_grid(grid)
+        populate_grid_neighbors(grid)
+        assign_particles_to_grid(rxy, grid)
+
+#        print_particles_in_grid(grid)
+
+        chosen_particle, chosen_tile, position = select_particle_and_tile(grid, True, 2)
+        overlap_count, overlapping_particles = check_for_collisions('UP', grid,
+                                                chosen_particle, chosen_tile,
+                                                4, 0.25)
+#        print(chosen_particle, chosen_tile, position)
+
+        move(direction, rxy, grid, chosen_particle, chosen_tile, position, 4)    
+        
+
         
 
 
 
-        # test cases for the check_for_collisions(direction, grid, rand_particle, tile)
-
-        # test_grid with particles in list form:
-        # [0,0] : (0,0)
-        # [1,0] : (1,0)
-        # [2,0] : 
-        # [0,1] : (0,1)
-        # [1,1] : 
-        # [2,1] : (2,1)
-        # [0,2] :
-        # [1,2] : 
-        # [2,2] : 
-
-        direction = 'UP'
-        grid = test_grid
-
-
-            # Prints particles in grid layout, T/F for grid labels. defaults to T
-        #print_particles_in_grid(grid, True)
-
-
-        '''
 if __name__ == '__main__':
     unittest.main()
