@@ -148,6 +148,8 @@ class TestGridMethod(unittest.TestCase):
         collisions in its own tile and if none are found checks the neighbors
         in the direction traveled'''
         
+        #test cases designed with diamter = 1 for the pass/fail conditions
+        Values.diameter = 1
         # smallest possible case (because of list indexes)
         # [1,0] | [1,1]
         # empty   empty
@@ -338,7 +340,7 @@ class TestGridMethod(unittest.TestCase):
 
 #        print(chosen_particle, chosen_tile, position)
         # one collision
-        self.assertEqual(overlap_count, 1)
+        self.assertEqual(overlap_count, 3)
         self.assertNotEqual(overlapping_particles, [[-9.0,[-9.0,-9.0]]])
 
     def test_move(self):

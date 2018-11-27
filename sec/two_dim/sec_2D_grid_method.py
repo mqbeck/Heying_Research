@@ -7,16 +7,19 @@ Fix Movement/collision
         maybe Dr. Choboter's suggestion of dy missing a power is realated
  x  grid seems to be rotated (i.e. I mixed up x and y... again)
         seems I inverted my reference... again. Found a bug anyways
-    collision seems to be missing adding collsions for non PBC 
+ x  collision seems to be missing adding collsions for non PBC 
         i.e. only PBC collisions are recorded
-    need to fix particles not ending up in the proper grid after move
+ x  need to fix particles not ending up in the proper grid after move
         i.e. (0, 3.7) should end up in [0,3], not [0,2]
         ^this. letting move move instead of function for assigning particles to
             grid seems to be the cause
-    now that grids are smaller, need to check more grids for possible collisions
+ x  now that grids are smaller, need to check more grids for possible collisions
 Things that might help debugging`
-    set up printing function
+ x  set up printing function
+    duplicate particle in a grid - ending up with an extra particle
+        possibly related: one particle is misrepresented
 After fix
+    look into using Decimal instead of float for calculationsj:w
     Set up histogram function
     set up sacling grid tile
         scale particles down rather than scaling grid up -keep grids 1x1
@@ -39,14 +42,14 @@ import copy
 #import numpy as np
 
 class Values:
-    diameter = 1  # particle diameter (for hard sphere model)
-    ncycles = 4 # number of times a particle will be selceted and moved
-    nparticles = 18 # number of particles
+    diameter = 0.4  # particle diameter (for hard sphere model)
+    ncycles = 16 # number of times a particle will be selceted and moved
+    nparticles = 7 # number of particles
     # particle density - how close the particles will be at simulation start
     rho = 0.5 
     volume_length = (nparticles / rho) ** 0.5 # length of the box
     # inverse of the length for use in calculations later
-    inv_length = 1 / volume_length 
+    inv_length = 1 / floor(volume_length)
     length = nparticles ** 0.5 # length the particles will be moved per cycle
     n_root = ceil(sqrt(nparticles / rho)) 
     # set the height of the grid_tils relative to the particles diameter
@@ -127,13 +130,22 @@ def main():
     #constructs a histogram for chemical potential calculations
 #    build_histogram(Values.rx)  
 
-#    filename = "{0}_particles_{1}_cycles_{2}_minutes.txt".format(Values.nparticles, Values.ncycles, Values.time/60) #custom file name
-#   write_to_file(filename, Values.rx, Values.rx_init) # write and output file
-#    print(Values.rx) # print final, sorted list to terminal    #build_histogram(Values.rx)
-  #  filename = "{0}_particles_{1}_cycles_{2}_minutes.txt".format(Values.nparticles, Values.ncycles, Values.time/60) # custom file name
-  #  write_to_file(filename, Values.rx, Values.rx_init) # make a new file using custom file name
+    #custom file name
+#    filename = "{0}_particles_{1}_cycles_{2}_minutes.txt".format(
+#        Values.nparticles, Values.ncycles, Values.time/60)
+    # write and output file 
+#    write_to_file(filename, Values.rx, Values.rx_init) 
+    #build_histogram(Values.rx)
+#    print(Values.rx) # print final, sorted list to terminal    
+    # custom file name
+#    filename = "{0}_particles_{1}_cycles_{2}_minutes.txt".format(
+#        Values.nparticles, Values.ncycles, Values.time/60) 
+    # make a new file using custom file name
+#    write_to_file(filename, Values.rx, Values.rx_init) 
 
 
+    print('\n\n')
+    print_particles_in_grid(grid)
     rxy = sorted(rxy)
     print('\n\n')
     print("Start\t\t\tEnd")
@@ -147,10 +159,10 @@ def main():
             x_dist = abs(rxy[i][0] - rxy[j][0])
             y_dist = abs(rxy[i][1] - rxy[j][1])
             temp_list.append([sqrt(x_dist**2 + y_dist**2),i,j])
-    print('\n\n','\nVector Distances < 1:\n------------------\n')
+    print('\n\n','\nVector Distances < diameter: \n------------------\n')
     temp_list = sorted(temp_list)
     for i in temp_list:
-        if (i[0] < 1):
+        if (i[0] < Values.diameter):
             print(i)
 
 #    print(rxy) # print final, sorted list to terminal for quick review without opening file
@@ -291,8 +303,8 @@ def define_list(nparticles, volume_length, diameter, rxy):
     '''
     
     for i in range(0, nparticles):
-        rxy[i] = [float(i % floor(volume_length - 1)), 
-                    i // (volume_length - 1)]
+        rxy[i] = [float(ceil(i % (volume_length - 1))), 
+                    float(i // (volume_length - 1))]
     #enddo    
 
 def assign_particles_to_grid(rxy, grid): #O(n) or O(n ** dimension) 
@@ -320,9 +332,10 @@ def print_particles_in_grid(grid, grid_labels = True):
             if (len(grid[i][j].particle_list) == 0):
                 print('|    Empty', end ='    | ')
             else:
-                print('| ',grid[i][j].particle_list, end =' | ')
+                temp = [[round(value, 2) for value in pair] for pair in grid[i][j].particle_list]
+                print('| ', temp, end =' | ')
         print()
-        print("--------------------------------")
+        print("-----------------------------------------------------------------------------------")
 
 def single_event_chain(rxy, grid):
     for i in range(0, Values.ncycles):
@@ -378,8 +391,10 @@ def check_for_collisions(direction, grid, rand_particle, tile, volume_length, in
             #pbc stands for periodic boundary conditions
             y_distance_btwn = abs(rand_particle[1] - particle[1])
             # the rounding forces either a 0 or 1
-            y_distance_pbc = (y_distance_btwn - volume_length*
+            y_distance_pbc = abs(y_distance_btwn - floor(volume_length + 1)*
                             round(y_distance_btwn*inv_length))
+            if (Values.extra_print):
+                print('ydist: ', y_distance_btwn, 'y pbc: ', y_distance_pbc)
 
             # no collision: the particle are farther apart than the distance
             # being moved
@@ -388,14 +403,16 @@ def check_for_collisions(direction, grid, rand_particle, tile, volume_length, in
 
             # no collision: the particles are within striking distance but
             # the moving particle is moving away from the stationary particle
-            if ((y_distance_pbc <= Values.grid_tile_height) and
+            if ((y_distance_pbc <= Values.diameter) and
                  (rand_particle[1] > particle[1])):
                 continue
 
             # particles are within y striking distance: check x distances
             x_distance_btwn = abs(rand_particle[0] - particle[0])
-            x_distance_pbc = (x_distance_btwn - volume_length*
+            x_distance_pbc = abs(x_distance_btwn - floor(volume_length + 1)*
                                 round(x_distance_btwn*inv_length))
+            if (Values.extra_print):
+                print('xdist: ', x_distance_btwn, 'x pbc: ', x_distance_pbc)
 
             # no collision: radius + radius = diameter
             # the x distance between is greater than the diameter
@@ -407,8 +424,8 @@ def check_for_collisions(direction, grid, rand_particle, tile, volume_length, in
             dy = sqrt(abs(Values.diameter**2 - x_distance_pbc**2))
             next_particle.append([sqrt(x_distance_pbc**2 +
                                 y_distance_pbc**2), particle,
-                                [tile.y//Values.grid_tile_height,
-                                tile.x//Values.grid_tile_height],
+                                [tile.x//Values.grid_tile_height,
+                                tile.y//Values.grid_tile_height],
                                 abs(abs(y_distance_pbc) - dy)])
 
         if (overlap_count == 0):
@@ -423,20 +440,19 @@ def check_for_collisions(direction, grid, rand_particle, tile, volume_length, in
                         continue
                     
                     y_distance_btwn = abs(rand_particle[1] - particle[1])
-                    y_distance_pbc = (y_distance_btwn - volume_length*
+                    y_distance_pbc = abs(y_distance_btwn - floor(volume_length + 1)*
                                 round(y_distance_btwn*inv_length))
 
                     # no collision
-                    if (y_distance_pbc > Values.grid_tile_height):
+                    if (y_distance_pbc > Values.diameter):
                         continue
-                    if ((y_distance_pbc <= Values.grid_tile_height) and
+                    if ((y_distance_pbc <= Values.diameter) and
                          (rand_particle[1] > particle[1])):# and (y_distance_pbc >  0):
-                        #continue
-                        pass
+                        continue
 
                     # if a y collision is detected proceed to check for x
                     x_distance_btwn = abs(rand_particle[0] - particle[0])
-                    x_distance_pbc = abs(x_distance_btwn - volume_length*
+                    x_distance_pbc = abs(x_distance_btwn - floor(volume_length + 1)*
                                     round(x_distance_btwn*inv_length))
                     if (x_distance_pbc >= Values.diameter):
                         continue
@@ -658,8 +674,9 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
     '''Legacy Comment'''
     #Rather than adding up, I decided to subtract - am I pessimistic?
 
-    print("pre move")
-    print_particles_in_grid(grid, True)
+    if (Values.extra_print):
+        print("pre move")
+        print_particles_in_grid(grid, True)
     distance = Values.length
     x_distance_btwn = None
     y_distance_btwn = None
@@ -706,13 +723,15 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
                     print("No particle collision")
                 # remove particle from starting grid
                 temp = tile.particle_list.pop(position)
+                if (Values.extra_print):
+                    print("particle moving: ", temp)
                 
                 # start modifying the y-value of that particle
                 if (Values.extra_print):
                     print("start temp[1]: ", temp[1])
                 # update particle (moving up)
-                if (distance > Values.grid_tile_height):
-                    temp[1] += Values.grid_tile_height
+                if (distance > Values.diameter):
+                    temp[1] += Values.diameter
                     if (Values.extra_print):
                         print("updated temp[1]: ", temp[1])
                 else:
@@ -720,17 +739,17 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
                     if (Values.extra_print):
                         print("update 2 temp[1]: ", temp[1])
                 # periodic boundary condition
-                if (temp[1] >= volume_length):
-                    temp[1] = temp[1] - volume_length
-                    if (Values.extra_print):
-                        print("pbc temp[1]: ", temp[1])
                 # determine destination grid (up is second in the list)
                 y = floor(temp[1] / Values.grid_tile_height)
-                if (y > tile.y):
+                if (y - tile.y > 0):
                     destination = (grid[tile.neighbor_list[1][0]]
                                      [tile.neighbor_list[1][1]])
                 else:
                     destination = tile
+                if (temp[1] >= (floor(volume_length) + 1)):
+                    temp[1] = temp[1] - floor(volume_length + 1)
+                    if (Values.extra_print):
+                        print("pbc temp[1]: ", temp[1])
                 # put particle in destination grid
                 destination.particle_list.append(temp)
                 # update cycle movement
@@ -740,13 +759,13 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
                 position = len(destination.particle_list) - 1
                 tile = destination
 
-                print("\n\npost move-no collision")
-                print_particles_in_grid(grid, grid_labels = True)
+                if (Values.extra_print):
+                    print("\n\npost move-no collision")
+                    print_particles_in_grid(grid, grid_labels = True)
 
             # collision
             # next_particle should = [distance to nearest particle, particle,
             #                           grid that particle is in]
-
             if (overlap_count > 0):
                 # the closest collision
                 # second value because the first is broken, dummy data
@@ -757,8 +776,8 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
                 #the index of the particle that will be hit
                 neigh_x = neighbor_tile[0]
                 neigh_y = neighbor_tile[1]
-                print(neigh_x, neigh_y)
-                print(grid[neigh_x][neigh_y].particle_list)
+                if (Values.extra_print):
+                    print(grid[neigh_x][neigh_y].particle_list)
                 index = grid[neigh_x][neigh_y].particle_list.index(particle_hit)
 
                 # update particle (moving up)
@@ -766,16 +785,18 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
                     particle[1] += delta_y
                 else:
                     particle[1] += distance
-                # periodic boundary condition
-                if (particle[1] >= volume_length):
-                    particle[1] = particle[1] - volume_length
                 # determine destination grid (up is second in the list)
                 y = floor(particle[1] / Values.grid_tile_height)
-                if (y > tile.y):
+                if (Values.extra_print):
+                    print('y: ', y, "tile.y: ", tile.y)
+                if (y - tile.y > 0):
                     destination = (grid[tile.neighbor_list[1][0]]
                                      [tile.neighbor_list[1][1]])
                 else:
                     destination = tile
+                # periodic boundary condition
+                if (particle[1] >= (floor(volume_length) + 1)):
+                    particle[1] = particle[1] - floor(volume_length + 1)
                 # put particle in destination grid
                 tile.particle_list.pop(position)
                 destination.particle_list.append(particle)
@@ -788,8 +809,9 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
                 position = index
                 tile = grid[neigh_x][neigh_y]
 
-                print("\n\npost move-collision")
-                print_particles_in_grid(grid, grid_labels = True)
+                if (Values.extra_print):
+                    print("\n\npost move-collision")
+                    print_particles_in_grid(grid, grid_labels = True)
 
 
 
