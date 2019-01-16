@@ -524,7 +524,6 @@ def check_for_collisions(direction, grid, rand_particle, tile, volume_length, in
                                         y_distance_pbc**2), particle,
                                         tile.neighbor_list[i],
                                         abs(abs(y_distance_pbc) - dy)])
-    '''
     elif (direction == 'DOWN'):
         '''Check collison down'''
         # down, left, right, down-left, down-right
