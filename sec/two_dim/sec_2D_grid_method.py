@@ -47,7 +47,7 @@ class Values:
     nparticles = 7 # number of particles
     # particle density - how close the particles will be at simulation start
     rho = 0.5 
-    volume_length = (nparticles / rho) ** 0.5 # length of the box
+    volume_length = ceil((nparticles / rho) ** 0.5 )# length of the box
     # inverse of the length for use in calculations later
     inv_length = 1 / floor(volume_length)
     length = nparticles ** 0.5 # length the particles will be moved per cycle
@@ -367,6 +367,12 @@ def select_particle_and_tile(grid, override = False, override_num = 0):
     return rand_particle,the_chosen_one, random_number
 
 def check_for_collisions(direction, grid, rand_particle, tile, volume_length, inv_length):
+    """ grid is the list of tiles, each tile has a list tof particles
+    rand_particle is the moving particle
+    tile is the tile containing the moving particle
+    volume_length, and inv_length were included for debugging reasons (to allow
+    different grid sizes more easily
+    """
     if (Values.extra_print):
         print("tile: ", tile, "neighbor list: ", tile.neighbor_list)
     x_distance_btwn = 0
@@ -376,7 +382,60 @@ def check_for_collisions(direction, grid, rand_particle, tile, volume_length, in
     neighbor_tiles = None
     neighbor_tile = None
 
+    moving = rand_particle
+
     if (direction == 'UP'):
+        "first check self"
+        tile.particle_list
+        "moving up: want to check tile's neighbors up, up-l, up-r, l, and R"
+        # up, left, right, up-left, up-right
+        neighbor_tiles = [1, 2, 3, 4, 5]
+        '''Check collison up'''
+        # up, left, right, up-left, up-right
+        neighbor_tiles = [1, 2, 3, 4, 5]
+
+        # check self for collisions (in the case of multiple particles fitting
+        # in a single grid
+
+        # checking same grid as moving particle
+        for stationary in tile.particle_list:
+            x_result = abs(moving[0] - stationary[0])
+            if (x_result <= Values.diameter):
+                y_result = moving[1] - stationary[1]
+                if (y_result < 0):
+                    distance_to_collision = ( stationary[1] - moving[1] -
+                                            sqrt(4*(Values.diameter*0.5)**2 -
+                                            abs(stationary[0] - moving[0])**2) )
+                    overlap_count += 1
+                    next_particle.append([distance_to_collision, stationary,
+                                        tile.neighbor_list, distance_to_collision])
+
+
+        if (overlap_count == 0):
+            #check neighbors for collisions
+            for i in neighbor_tiles:
+                # ith neighbor in the neighbor list
+                neighbor_tile = tile.neighbor_list[i]
+                neighbor = grid[neighbor_tile[0]][neighbor_tile[1]]
+                for stationary in neighbor.particle_list:
+                    x_result = abs(moving[0] - stationary[0])
+                    if (x_result > 4*Values.diameter):
+                        x_result = abs(x_result - volume_length)
+                    if (x_result <= Values.diameter):
+                        y_result = moving[1] - stationary[1]
+                        if (y_result > 4*Values.diameter):
+                            y_result = abs(y_result - volume_length)
+                        if (y_result < 0):
+                            distance_to_collision = ( stationary[1] - moving[1] -
+                                                    sqrt(4*(Values.diameter*0.5)**2 -
+                                                   (stationary[0] - moving[0])**2) )
+                            overlap_count += 1
+                            next_particle.append([distance_to_collision, stationary,
+                                                tile.neighbor_list[i], distance_to_collision])
+
+
+
+    if (direction == 'UP2'):
         '''Check collison up'''
         # up, left, right, up-left, up-right
         neighbor_tiles = [1, 2, 3, 4, 5]
