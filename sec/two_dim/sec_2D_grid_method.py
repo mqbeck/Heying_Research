@@ -43,8 +43,8 @@ import copy
 
 class Values:
     diameter = 0.4  # particle diameter (for hard sphere model)
-    ncycles = 16 # number of times a particle will be selceted and moved
-    nparticles = 7 # number of particles
+    ncycles = 20 # number of times a particle will be selceted and moved
+    nparticles = 16 # number of particles
     # particle density - how close the particles will be at simulation start
     rho = 0.5 
     volume_length = ceil((nparticles / rho) ** 0.5 )# length of the box
@@ -65,7 +65,7 @@ class Values:
 
     #control variables
     pause = False
-    extra_print = True
+    extra_print = False #True
 
 class Grid_tile:
     '''Declare a class to make object called grid tiles which have the 
@@ -385,9 +385,9 @@ def check_for_collisions(direction, grid, rand_particle, tile, volume_length, in
     moving = rand_particle
 
     if (direction == 'UP'):
-        "first check self"
+        #"first check self"
         tile.particle_list
-        "moving up: want to check tile's neighbors up, up-l, up-r, l, and R"
+        #"moving up: want to check tile's neighbors up, up-l, up-r, l, and R"
         # up, left, right, up-left, up-right
         neighbor_tiles = [1, 2, 3, 4, 5]
         '''Check collison up'''
@@ -398,6 +398,8 @@ def check_for_collisions(direction, grid, rand_particle, tile, volume_length, in
         # in a single grid
 
         # checking same grid as moving particle
+        if (Values.extra_print):
+            print("checking within grid")
         for stationary in tile.particle_list:
             x_result = abs(moving[0] - stationary[0])
             if (x_result <= Values.diameter):
@@ -408,9 +410,11 @@ def check_for_collisions(direction, grid, rand_particle, tile, volume_length, in
                                             abs(stationary[0] - moving[0])**2) )
                     overlap_count += 1
                     next_particle.append([distance_to_collision, stationary,
-                                        tile.neighbor_list, distance_to_collision])
+                                        [tile.x, tile.y], distance_to_collision])
 
 
+        if (Values.extra_print):
+            print("checking above grid")
         if (overlap_count == 0):
             #check neighbors for collisions
             for i in neighbor_tiles:
@@ -423,8 +427,8 @@ def check_for_collisions(direction, grid, rand_particle, tile, volume_length, in
                         x_result = abs(x_result - volume_length)
                     if (x_result <= Values.diameter):
                         y_result = moving[1] - stationary[1]
-                        if (y_result > 4*Values.diameter):
-                            y_result = abs(y_result - volume_length)
+                        if (Values.extra_print):
+                            print('y result: ', y_result)
                         if (y_result < 0):
                             distance_to_collision = ( stationary[1] - moving[1] -
                                                     sqrt(4*(Values.diameter*0.5)**2 -
@@ -432,6 +436,20 @@ def check_for_collisions(direction, grid, rand_particle, tile, volume_length, in
                             overlap_count += 1
                             next_particle.append([distance_to_collision, stationary,
                                                 tile.neighbor_list[i], distance_to_collision])
+
+                        if (y_result > 4*Values.diameter):
+                            y_result = moving[1] - (stationary[1] + volume_length) 
+                            if (Values.extra_print):
+                                print('y resul pbc: ', y_result)
+                            distance_to_collision = ( (stationary[1] + volume_length) - moving[1] -
+                                                    sqrt(4*(Values.diameter*0.5)**2 -
+                                                   (stationary[0] - moving[0])**2) )
+                            overlap_count += 1
+                            next_particle.append([distance_to_collision, stationary,
+                                                tile.neighbor_list[i], distance_to_collision])
+
+
+
 
 
 
@@ -735,7 +753,7 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
     if (Values.extra_print):
         print("pre move")
         print_particles_in_grid(grid, True)
-    distance = Values.length
+    distance = 1*Values.length
     x_distance_btwn = None
     y_distance_btwn = None
     neighbor_tile = None
@@ -760,12 +778,14 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
                     print("{} {} \t {}".format(i, start_rxy[i], rxy[i]))
 
             # do some calculations for printing debugging information?
-            temp_list = [] 
-            for i in range(0, len(rxy) - 1):
-                for j in range(i + 1, len(rxy)):
-                    x_dist = abs(rxy[i][0] - rxy[j][0])
-                    y_dist = abs(rxy[i][1] - rxy[j][1])
-                    temp_list.append([sqrt(x_dist**2 + y_dist**2),i,j])
+            # no, this is to build the histogram
+            if (Values.extra_print):
+                temp_list = [] 
+                for i in range(0, len(rxy) - 1):
+                    for j in range(i + 1, len(rxy)):
+                        x_dist = abs(rxy[i][0] - rxy[j][0])
+                        y_dist = abs(rxy[i][1] - rxy[j][1])
+                        temp_list.append([sqrt(x_dist**2 + y_dist**2),i,j])
 
             # check for collisions
             if (Values.extra_print):
@@ -790,10 +810,14 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
                 # update particle (moving up)
                 if (distance > Values.diameter):
                     temp[1] += Values.diameter
+        #            if (temp[1] > volume_length):
+        #                temp[1] -= volume_length
                     if (Values.extra_print):
                         print("updated temp[1]: ", temp[1])
                 else:
                     temp[1] += distance
+        #            if (temp[1] > volume_length):
+        #                temp[1] -= volume_length
                     if (Values.extra_print):
                         print("update 2 temp[1]: ", temp[1])
                 # periodic boundary condition
@@ -804,8 +828,9 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
                                      [tile.neighbor_list[1][1]])
                 else:
                     destination = tile
-                if (temp[1] >= (floor(volume_length) + 1)):
-                    temp[1] = temp[1] - floor(volume_length + 1)
+
+                if (temp[1] >= ((volume_length) )):
+                    temp[1] = temp[1] - floor(volume_length)
                     if (Values.extra_print):
                         print("pbc temp[1]: ", temp[1])
                 # put particle in destination grid
@@ -835,6 +860,8 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
                 neigh_x = neighbor_tile[0]
                 neigh_y = neighbor_tile[1]
                 if (Values.extra_print):
+                    print('neighbor tile: ', neighbor_tile)
+                    print('neigh x: ', neigh_x, 'neigh y: ', neigh_y)
                     print(grid[neigh_x][neigh_y].particle_list)
                 index = grid[neigh_x][neigh_y].particle_list.index(particle_hit)
 
@@ -853,8 +880,8 @@ def move(direction, rxy, grid, particle, tile, position, volume_length = Values.
                 else:
                     destination = tile
                 # periodic boundary condition
-                if (particle[1] >= (floor(volume_length) + 1)):
-                    particle[1] = particle[1] - floor(volume_length + 1)
+                if (particle[1] >= (floor(volume_length) )):
+                    particle[1] = particle[1] - floor(volume_length )
                 # put particle in destination grid
                 tile.particle_list.pop(position)
                 destination.particle_list.append(particle)
